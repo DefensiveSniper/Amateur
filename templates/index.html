@@ -3,7 +3,6 @@
 <head>
   <meta charset="UTF-8">
   <title>Amatuer</title>
-  <!-- 通过 url_for('static', ...) 的方式来引入静态文件 -->
   <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 <body>
@@ -12,105 +11,370 @@
     <aside class="sidebar">
       <div class="sidebar-top">
         <div class="logo">
-          <!-- 替换为实际图片路径 -->
           <img src="/static/images/logo.png" alt="Logo" />
         </div>
-        <div class="app-name">Amastuer</div>
+        <div class="app-name">Amatuer</div>
       </div>
 
       <div class="sidebar-content">
+        <!-- 添加主页按钮 -->
         <div class="menu-item" data-page="home">
-          <div class="menu-icon">
-            <img src="/static/images/home.png" alt="home" />
-          </div>
+          <div class="menu-icon"><img src="/static/images/home.png" alt="home" /></div>
           <div class="menu-label">主页</div>
         </div>
+        <!-- 添加功能按钮 -->
         <div class="menu-item" data-page="tools">
-          <div class="menu-icon">
-            <img src="/static/images/tool.png" alt="tool" />
-          </div>
+          <div class="menu-icon"><img src="/static/images/tool.png" alt="tool" /></div>
           <div class="menu-label">功能</div>
         </div>
+        <!-- 添加 AI 对话按钮 -->
+        <div class="menu-item" data-page="chat">
+          <div class="menu-icon"><img src="/static/images/chat.png" alt="chat" /></div>
+          <div class="menu-label">AI 对话</div>
+        </div>
+        <!-- 添加关于按钮 -->
         <div class="menu-item" data-page="about">
-          <div class="menu-icon">
-            <img src="/static/images/about.png" alt="about" />
-          </div>
+          <div class="menu-icon"><img src="/static/images/about.png" alt="about" /></div>
           <div class="menu-label">关于</div>
-        </div>        
+        </div>
       </div>
-
     </aside>
 
     <!-- 右侧主要内容区 -->
     <main class="main-box">
-      <div class="main-content">
-          
-        </div>
+      <div class="main-content"></div>
     </main>
   </div>
 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', function() {
       const menuItems = document.querySelectorAll('.menu-item');
       const mainContent = document.querySelector('.main-content');
-  
-      // 定义各个页面的内容
+    
+      let chatHistory = []; // 存储聊天内容
+    
       const pages = {
-        home: `
-          <iframe src="https://hzihao.icu" class="iframe-content"></iframe>
-          <div class="main-tail">
-            <a href="https://hzihao.icu" target="_blank">
-              <p>Amatuer发电的地方</p>
-            </a>
-          </div>
-        `,
-        tools: `
-          <!-- 大框区域（顶部） -->
-          <div class="main-header fade-in">
-            <h2>一些可以有用的玩意</h2>
-          </div>
-          <!-- 下方三列 -->
-          <div class="cards-wrapper fade-in">
-            <div class="card">卡片1</div>
-            <div class="card">卡片2</div>
-            <div class="card">卡片3</div>
-          </div>
-        `,
-        about: `
-          <div class="page-content fade-in">
-            <div class="main-header">
-              <h2>关于我们</h2>
+        home: `<iframe src="https://hzihao.icu" class="iframe-content"></iframe>
+                <div class="main-tail">
+                  <a href="https://hzihao.icu" target="_blank"><p>Amatuer发电的地方</p></a>
+                </div>`,
+        tools: `<div class="main-header fade-in">
+                <h2>一些可能有用的玩意</h2><h3>但是还没有想法</h3></div>
+                <div class="cards-wrapper fade-in">
+                  <div class="card"><img src="/static/images/ela.png" alt="图片1"></div>
+                  <div class="card"><img src="/static/images/ela.png" alt="图片2"></div>
+                  <div class="card"><img src="/static/images/ela.png" alt="图片3"></div>
+                </div>`,
+        chat: `<div class="chat-container">
+                <div class="button-container">
+                  <button class="button-item" id="newChatButton">
+                    <div class="button-icon">
+                      <img src="/static/images/newchat.png" alt="newchat">
+                    </div>
+                    新聊天
+                  </button>
+
+                  <button class="button-item" id="configApiButton">
+                    <div class="button-icon">
+                      <img src="/static/images/setting.png" alt="setting">
+                    </div>
+                    配置
+                  </button>
+                </div>
+                <div class="chat-box" id="chat-box"></div>
+                <div class="chat-input">
+                    <input type="text" id="userInput" placeholder="输入你的问题">
+                    <button id="sendButton">发送</button>
+                </div>
             </div>
-            <div class="about-content">
-              <p>本应用由Amatuer个人独立使用AI开发。</p>
-            </div>
-          </div>
-        `
+            <!-- 配置模态框 -->
+            <div class="modal-overlay" id="modalOverlay"></div>
+            <div class="modal" id="configModal">
+                <h3>API 配置</h3>
+                <label>提供方：
+                    <select id="provider">
+                        <option value="openai">OpenAI</option>
+                        <option value="deepseek">DeepSeek</option> 
+                    </select>
+                </label>
+                <br><br>
+                <label>模型：
+                    <select id="model">
+                        <!-- 默认选项 -->
+                    </select>
+                </label>
+                <br><br>
+                <label>
+                    API Key:
+                    <input type="text" id="apiKey" placeholder="输入API Key">
+                </label>
+                <br><br>
+                <button id="saveConfig">保存</button>
+                <button id="closeModal">取消</button>
+            </div>`,
+        about: `<div class="page-content fade-in">
+                  <div class="main-header"><h2>一些可能有用的信息</h2></div>
+                  <div class="about-content"><p>本应用由Amatuer个人独立使用AI开发。</p></div>
+                </div>`,
       };
-  
-      // 默认加载主页内容
-      mainContent.innerHTML = pages.home;
-      menuItems[0].classList.add('active');
-  
-      // 监听菜单点击事件
-      menuItems.forEach(item => {
-        item.addEventListener('click', () => {
-          // 移除所有按钮的激活状态
-          menuItems.forEach(mi => mi.classList.remove('active'));
-          item.classList.add('active');
-  
-          // 获取对应页面的内容
-          const page = item.getAttribute('data-page');
-  
-          // 清空内容再加动画（延迟 50ms 确保动画生效）
-          mainContent.innerHTML = "";
-          setTimeout(() => {
-            mainContent.innerHTML = pages[page];
-          }, 50);
-        });
+    
+    // 默认显示主页
+    mainContent.innerHTML = pages.home;
+    menuItems[0].classList.add('active');
+    
+    // 绑定导航栏点击事件
+    menuItems.forEach(item => {
+      item.addEventListener('click', () => {
+        menuItems.forEach(mi => mi.classList.remove('active'));
+        item.classList.add('active');
+        const page = item.getAttribute('data-page');
+
+        mainContent.innerHTML = "";
+        setTimeout(() => {
+          mainContent.innerHTML = pages[page];
+      
+          if (page === "chat") {
+              restoreChatHistory();
+      
+              // 确保事件不重复绑定
+              const sendButton = document.getElementById("sendButton");
+              const userInput = document.getElementById("userInput");
+              if (sendButton) {
+                  sendButton.removeEventListener("click", sendMessage);
+                  sendButton.addEventListener("click", sendMessage);
+              }
+              if (userInput) {
+                  userInput.removeEventListener("keydown", handleKeyPress);
+                  userInput.addEventListener("keydown", handleKeyPress);
+                  userInput.disabled = false;
+                  userInput.focus();
+              }
+      
+              const configButton = document.getElementById("configApiButton");
+              if (configButton) {
+                  configButton.addEventListener("click", function () {
+                      document.getElementById("configModal").classList.add("active");
+                      document.getElementById("modalOverlay").classList.add("active");
+      
+                      fetch("/get_config")
+                          .then(response => response.json())
+                          .then(config => {
+                              document.getElementById("provider").value = config.provider;
+                              updateModelOptions();
+                              document.getElementById("model").value = config.model;
+                              document.getElementById("apiKey").value = config.apiKeys[config.provider] || "";
+                          })
+                          .catch(error => {
+                              console.error("加载配置失败:", error);
+                          });
+                  });
+              }
+      
+              document.getElementById("closeModal").addEventListener("click", function () {
+                  document.getElementById("configModal").classList.remove("active");
+                  document.getElementById("modalOverlay").classList.remove("active");
+              });
+      
+              // 配置管理
+              const providerSelect = document.getElementById("provider");
+              const modelSelect = document.getElementById("model");
+              const apiKeyInput = document.getElementById("apiKey");
+              const saveButton = document.getElementById("saveConfig");
+      
+              const models = {
+                  "openai": ["gpt-4o", "gpt-4o-mini", "o1"],
+                  "deepseek": ["deepseek-chat", "deepseek-reasoner"]
+              };
+      
+              let apiKeys = { "openai": "", "deepseek": "" };
+      
+              function updateModelOptions() {
+                  const selectedProvider = providerSelect.value;
+                  modelSelect.innerHTML = "";
+                  models[selectedProvider].forEach(model => {
+                      let option = document.createElement("option");
+                      option.value = model;
+                      option.textContent = model;
+                      modelSelect.appendChild(option);
+                  });
+                  apiKeyInput.value = apiKeys[selectedProvider] || "";
+              }
+      
+              providerSelect.addEventListener("change", function () {
+                  updateModelOptions();
+              });
+      
+              saveButton.addEventListener("click", function () {
+                  const selectedProvider = providerSelect.value;
+                  if (!apiKeys[selectedProvider]) {
+                      apiKeys[selectedProvider] = "";
+                  }
+                  apiKeys[selectedProvider] = apiKeyInput.value;
+                  const config = {
+                      provider: selectedProvider,
+                      model: modelSelect.value,
+                      apiKeys: apiKeys
+                  };
+                  fetch("/save_config", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify(config)
+                  })
+                  .then(response => response.json())
+                  .then(data => {
+                    console.log("配置已保存!");
+            
+                    // 关闭配置窗口
+                    document.getElementById("configModal").classList.remove("active");
+                    document.getElementById("modalOverlay").classList.remove("active");
+            
+                    // 确保输入框恢复可用
+                    const userInput = document.getElementById("userInput");
+                    if (userInput) {
+                        userInput.disabled = false;
+                        userInput.focus();  // 让用户可以立刻输入消息
+                    }
+                  })
+                  .catch(error => {
+                      console.error("保存失败:", error);
+                  });
+              });
+      
+              // 初始化配置
+              fetch("/get_config")
+              .then(response => response.json())
+              .then(data => {
+                  if (data.provider) {
+                      providerSelect.value = data.provider;
+                  }
+                  if (data.apiKeys) {
+                      apiKeys = data.apiKeys;
+                  }
+                  if (data.model) {
+                      updateModelOptions();
+                      modelSelect.value = data.model;
+                  } else {
+                      updateModelOptions();
+                  }
+              })
+              .catch(error => {
+                  console.error("加载配置失败:", error);
+              });
+
+              document.getElementById("newChatButton").addEventListener("click", function () {
+                saveChatHistory();
+                clearChatWindow();
+              });
+          }
+      }, 50);      
       });
     });
-  </script>  
+  
+    // 监听回车键
+    function handleKeyPress(event) {
+      if (event.key === "Enter") {
+        event.preventDefault(); // 防止换行
+        sendMessage();
+        chatBox.scrollTop = chatBox.scrollHeight;  // 保持滚动条在底部
+      }
+    }
 
-</body>
+    // 发送用户消息
+    async function sendMessage() {
+      const inputField = document.getElementById('userInput');
+      const chatBox = document.getElementById('chat-box');
+      if (!inputField || !chatBox) return;
+  
+      const message = inputField.value.trim();
+      if (!message) return;
+  
+      const summarizedMessage = chatHistory.map(entry => 
+          `[${entry.type === "user" ? "User" : "AI"}]: ${entry.text}`
+      ).join("\n") + `\n[User]: ${message}`;
+  
+      // 记录并更新 UI
+      chatHistory.push({ type: "user", text: message });
+      chatBox.innerHTML += `<div class="user-message">${message}</div>`;
+      inputField.value = '';
+  
+      try {
+          const response = await fetch('http://127.0.0.1:6969/chat', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ message: summarizedMessage })  // 发送带有对话历史的消息
+          });
+  
+          const reader = response.body.getReader();
+          let aiMessage = "";
+          let decoder = new TextDecoder();
+  
+          // 创建 AI 回复的 div，但不包含 "[AI]: "
+          const aiMessageDiv = document.createElement('div');
+          aiMessageDiv.classList.add('ai-message');
+          chatBox.appendChild(aiMessageDiv);
+  
+          while (true) {
+              const { done, value } = await reader.read();
+              if (done) break;
+  
+              const chunk = decoder.decode(value, { stream: true });
+              aiMessage += chunk;
+              aiMessageDiv.innerText = aiMessage;  // 仅显示 AI 回复内容
+              chatBox.scrollTop = chatBox.scrollHeight;  // 保持滚动条在底部
+          }
+  
+          // 存储 AI 回复到历史记录，但不包含 "[AI]: "
+          chatHistory.push({ type: "ai", text: aiMessage });
+  
+      } catch (error) {
+          chatBox.innerHTML += `<div class="ai-message error">服务器错误，请检查 API 设置或网络连接。</div>`;
+      }
+    }
+  
+  
+  
+    // 恢复聊天记录
+    function restoreChatHistory() {
+      const chatBox = document.getElementById('chat-box');
+      if (!chatBox) return;
+      chatBox.innerHTML = "";
+      chatHistory.forEach(entry => {
+        if (entry.type === "user") {
+          chatBox.innerHTML += `<div class="user-message">${entry.text}</div>`;
+        } else {
+          chatBox.innerHTML += `<div class="ai-message">${entry.text}</div>`;
+        }
+      });
+    }
+
+    // 保存聊天记录到本地存储或服务器
+    function saveChatHistory() {
+      try {
+          // 通过 API 保存到服务器
+          // fetch("/save_chat_history", {
+          //     method: "POST",
+          //     headers: { "Content-Type": "application/json" },
+          //     body: JSON.stringify(chatHistory)
+          // }).then(response => {
+          //     console.log("聊天记录已保存");
+          // }).catch(error => {
+          //     console.error("保存聊天记录失败", error);
+          // });
+      } catch (error) {
+          console.error("保存聊天记录时出错", error);
+      }
+    }
+  
+    // 清空聊天窗口和聊天记录数组
+    function clearChatWindow() {
+        const chatBox = document.getElementById('chat-box');
+        if (chatBox) {
+            chatBox.innerHTML = ""; // 清空聊天窗口
+        }
+        chatHistory = []; // 重置聊天记录
+    }
+  });
+    </script>    
+  </body>
 </html>
