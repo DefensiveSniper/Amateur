@@ -436,3 +436,40 @@ body, html {
     opacity: 1;
   }
 }
+
+/* 历史记录 */
+.history-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 10px;
+  border-radius: 6px;
+  margin-bottom: 6px;
+  background-color: #f8f9fa;
+  border: 1px solid #ddd;
+  transition: background-color 0.2s ease;
+}
+
+.history-item:hover {
+  background-color: #e0f0ff;
+}
+
+.history-item button {
+  color: #cc0000;
+  font-size: 16px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding-left: 10px;
+}
+
+.history-item button:hover {
+  color: red;
+  transform: scale(1.15);
+}
+#deleteConfirmModal {
+  text-align: center;
+}
+#deleteConfirmModal button {
+  margin: 8px;
+}

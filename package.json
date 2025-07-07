@@ -1,17 +1,39 @@
 {
   "dependencies": {
     "concurrently": "^9.1.2",
-    "electron": "^34.0.2",
     "wait-on": "^8.0.2"
   },
-  "name": "amatuer",
-  "version": "1.0.0",
+  "devDependencies": {
+    "electron": "^34.0.2"
+  },
+  "name": "amateur",
+  "version": "1.1.4",
   "main": "main.js",
   "scripts": {
-    "start-python": "python main.py",
+    "start-python": "python flask_server.py",
     "start-electron": "electron main.js",
-    "wait-and-start-electron": "wait-on http://127.0.0.1:5000 && npm run start-electron",
+    "wait-and-start-electron": "wait-on http://127.0.0.1:6969 && npm run start-electron",
     "start": "concurrently --kill-others \"npm run start-python\" \"npm run wait-and-start-electron\""
+  },
+  "build": {
+    "appId": "com.amateur.app",
+    "productName": "Amateur",
+    "files": [
+      "main.js",
+      "static/**/*",
+      "templates/**/*",
+      "package.json"
+    ],
+    "extraFiles": [
+      {
+        "from": "dist/flask_server.exe",
+        "to": "."
+      }
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "static/images/logo.ico"
+    }
   },
   "keywords": [],
   "author": "",

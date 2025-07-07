@@ -2,8 +2,9 @@
 <html lang="zh">
 <head>
   <meta charset="UTF-8">
-  <title>Amatuer</title>
+  <title>Amateur</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+  <script src="https://kit.fontawesome.com/c0fb207afc.js" crossorigin="anonymous"></script>
 </head>
 <body>
   <div class="container">
@@ -13,7 +14,7 @@
         <div class="logo">
           <img src="/static/images/logo.png" alt="Logo" />
         </div>
-        <div class="app-name">Amatuer</div>
+        <div class="app-name">Amateur</div>
       </div>
 
       <div class="sidebar-content">
@@ -48,16 +49,19 @@
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
   <script>
+    let chatHistory = []; // 存储聊天内容
+    let currentFilename = null;    // 当前聊天的历史文件名
+    let hasUnsavedChanges = false; // 当前聊天内容是否有未保存更改
+    let hasDeletedOriginal = false;// 是否已经删除过原有聊天文件（防止重复删）
+
     document.addEventListener('DOMContentLoaded', function() {
       const menuItems = document.querySelectorAll('.menu-item');
       const mainContent = document.querySelector('.main-content');
     
-      let chatHistory = []; // 存储聊天内容
-    
       const pages = {
         home: `<iframe src="https://hzihao.icu" class="iframe-content"></iframe>
                 <div class="main-tail">
-                  <a href="https://hzihao.icu" target="_blank"><p>Amatuer发电的地方</p></a>
+                  <a href="https://hzihao.icu" target="_blank"><p>Amateur发电的地方</p></a>
                 </div>`,
         tools: `<div class="main-header fade-in">
                 <h2>一些可能有用的玩意</h2><h3>但是还没有想法</h3></div>
@@ -80,6 +84,13 @@
                       <img src="/static/images/setting.png" alt="setting">
                     </div>
                     配置
+                  </button>
+
+                  <button class="button-item" id="historyButton">
+                    <div class="button-icon">
+                      <img src="/static/images/history.png" alt="history">
+                    </div>
+                    回忆录
                   </button>
                 </div>
                 <div class="chat-box" id="chat-box"></div>
@@ -112,13 +123,26 @@
                 <br><br>
                 <button id="saveConfig">保存</button>
                 <button id="closeModal">取消</button>
-            </div>`,
+            </div>
+            <!-- 回忆录模态框 -->
+            <div class="modal" id="historyModal">
+              <h3>聊天历史</h3>
+              <div id="historyList" style="max-height: 300px; overflow-y: auto; margin: 10px 0;"></div>
+              <button id="closeHistory">关闭</button>
+            </div>
+            <!-- 删除确认模态框 -->
+            <div class="modal" id="deleteConfirmModal">
+              <h3 id="deleteConfirmText">确认删除？</h3>
+              <button id="confirmDeleteBtn">确认</button>
+              <button id="cancelDeleteBtn">取消</button>
+            </div>
+            `,
         about: `<div class="page-content fade-in">
                   <div class="main-header"><h2>一些可能有用的信息</h2></div>
-                  <div class="about-content"><p>本应用由Amatuer个人独立使用AI开发。</p></div>
+                  <div class="about-content"><p>本应用由Amateur个人独立使用AI开发。</p></div>
                 </div>`,
       };
-    
+
     // 默认显示主页
     mainContent.innerHTML = pages.home;
     menuItems[0].classList.add('active');
@@ -133,10 +157,9 @@
         mainContent.innerHTML = "";
         setTimeout(() => {
           mainContent.innerHTML = pages[page];
-      
           if (page === "chat") {
               restoreChatHistory();
-      
+
               // 确保事件不重复绑定
               const sendButton = document.getElementById("sendButton");
               const userInput = document.getElementById("userInput");
@@ -175,6 +198,131 @@
                   document.getElementById("configModal").classList.remove("active");
                   document.getElementById("modalOverlay").classList.remove("active");
               });
+
+              const historyButton = document.getElementById("historyButton");
+              const historyModal = document.getElementById("historyModal");
+              const historyList = document.getElementById("historyList");
+              const modalOverlay = document.getElementById("modalOverlay");
+
+              if (historyButton && historyModal && historyList && modalOverlay) {
+                historyButton.addEventListener("click", function () {
+                  modalOverlay.classList.add("active");
+                  historyModal.classList.add("active");
+
+                  // 请求历史记录
+                  fetch("/get_history")
+                    .then(res => res.json())
+                    .then(data => {
+                      historyList.innerHTML = "";
+                      if (Array.isArray(data)) {
+                        data.forEach(item => {
+                          const title = item.filename.split("_").slice(1).join("_").replace(".json", "");
+                          // 外层容器
+                          const entry = document.createElement("div");
+                          entry.className = "history-item";
+                          entry.style.display = "flex";
+                          entry.style.justifyContent = "space-between";
+                          entry.style.alignItems = "center";
+
+                          // 左侧：点击加载
+                          const titleDiv = document.createElement("div");
+                          titleDiv.textContent = "📄 " + title;
+                          titleDiv.style.flex = "1";
+                          titleDiv.style.cursor = "pointer";
+                          titleDiv.style.paddingRight = "10px";
+                          titleDiv.addEventListener("click", async () => {
+                            try {
+                              if (hasUnsavedChanges && chatHistory.length > 0) {
+                                await fetch("/save_history", {
+                                  method: "POST",
+                                  headers: { "Content-Type": "application/json" },
+                                  body: JSON.stringify(chatHistory)
+                                });
+                              }
+
+                              const res = await fetch(`/load_history?filename=${encodeURIComponent(item.filename)}`);
+                              const newChat = await res.json();
+                              chatHistory = newChat;
+                              currentFilename = item.filename;
+                              hasUnsavedChanges = false;
+                              hasDeletedOriginal = false;
+
+                              // 恢复聊天记录修改标志
+                              hasUnsavedChanges = false;
+
+                              modalOverlay.classList.remove("active");
+                              historyModal.classList.remove("active");
+                              restoreChatHistory();
+                              enableInput();  // 恢复用户输入框可用状态
+                            } catch (err) {
+                              alert("加载失败");
+                              console.error("加载聊天记录失败：", err);
+                            }
+                          });
+
+                          // 右侧：删除按钮
+                          const deleteBtn = document.createElement("button");
+                          deleteBtn.textContent = "🗑️";
+                          deleteBtn.title = "删除该聊天记录";
+                          deleteBtn.style.background = "transparent";
+                          deleteBtn.style.border = "none";
+                          deleteBtn.style.cursor = "pointer";
+                          deleteBtn.style.color = "#cc0000";
+                          deleteBtn.style.fontSize = "16px";
+                          deleteBtn.style.flexShrink = "0";
+
+                          deleteBtn.addEventListener("click", async (e) => {
+                            e.stopPropagation();
+                            showDeleteConfirm(`确认删除「${title}」这条聊天记录？`, async () => {
+                              try {
+                                const res = await fetch("/delete_history", {
+                                  method: "POST",
+                                  headers: { "Content-Type": "application/json" },
+                                  body: JSON.stringify({ filename: item.filename })
+                                });
+
+                                const result = await res.json();
+                                if (res.ok) {
+                                  entry.remove();
+                                } else {
+                                  alert(result.error || "删除失败");
+                                }
+                              } catch (err) {
+                                alert("删除失败");
+                                console.error("删除出错：", err);
+                              }
+
+                              enableInput(); // 确保恢复
+                            });
+                          }
+                          );
+                        
+                          // 组装到页面
+                          entry.appendChild(titleDiv);
+                          entry.appendChild(deleteBtn);
+                          historyList.appendChild(entry);
+                        });
+                      } else {
+                        historyList.innerHTML = "<p>未找到历史记录</p>";
+                      }
+                    })
+                    .catch(err => {
+                      historyList.innerHTML = "<p>加载失败</p>";
+                      console.error("历史记录加载失败:", err);
+                    });
+                    // 确保输入框恢复可用
+                    const userInput = document.getElementById("userInput");
+                    if (userInput) {
+                        userInput.disabled = false;
+                        userInput.focus();  // 让用户可以立刻输入消息
+                    }
+                });
+
+                document.getElementById("closeHistory").addEventListener("click", () => {
+                  modalOverlay.classList.remove("active");
+                  historyModal.classList.remove("active");
+                });
+              }
       
               // 配置管理
               const providerSelect = document.getElementById("provider");
@@ -239,7 +387,8 @@
                   .catch(error => {
                       console.error("保存失败:", error);
                   });
-              });
+                }
+              );
       
               // 初始化配置
               fetch("/get_config")
@@ -263,8 +412,11 @@
               });
 
               document.getElementById("newChatButton").addEventListener("click", function () {
-                saveChatHistory();
+                if (hasUnsavedChanges && chatHistory.length > 0) {
+                  saveChatHistory();
+                }
                 clearChatWindow();
+                hasUnsavedChanges = false;
               });
           }
       }, 50);      
@@ -277,6 +429,7 @@
         event.preventDefault(); // 防止换行
         sendMessage();
         chatBox.scrollTop = chatBox.scrollHeight;  // 保持滚动条在底部
+        document.getElementById('userInput')?.focus();  // 聚焦输入框
       }
     }
 
@@ -285,7 +438,20 @@
       const inputField = document.getElementById('userInput');
       const chatBox = document.getElementById('chat-box');
       if (!inputField || !chatBox) return;
-  
+      
+      // 只要编辑且还没删过原文件，则立即删除后端文件
+      if (!hasDeletedOriginal && hasUnsavedChanges === false && currentFilename) {
+        fetch("/delete_history", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ filename: currentFilename })
+        }).then(() => {
+          hasDeletedOriginal = true;
+          currentFilename = null;
+        });
+      }
+      hasUnsavedChanges = true;
+
       const message = inputField.value.trim();
       if (!message) return;
   
@@ -295,8 +461,11 @@
   
       // 记录并更新 UI
       chatHistory.push({ type: "user", text: message });
-      chatBox.innerHTML += `<div class="user-message">${message}</div>`;
+      chatBox.innerHTML += `<div class="user-message">🧑：${message}</div>`;
       inputField.value = '';
+
+      // 检查是否有未保存的更改
+      hasUnsavedChanges = true;
   
       try {
           const response = await fetch('http://127.0.0.1:6969/chat', {
@@ -309,27 +478,38 @@
           let aiMessage = "";
           let decoder = new TextDecoder();
   
-          // 创建 AI 回复的 div，但不包含 "[AI]: "
+          // 创建 AI 回复的 div
           const aiMessageDiv = document.createElement('div');
           aiMessageDiv.classList.add('ai-message');
           chatBox.appendChild(aiMessageDiv);
-  
+
+          let firstChunk = true;
+
           while (true) {
               const { done, value } = await reader.read();
               if (done) break;
-  
+
               const chunk = decoder.decode(value, { stream: true });
               aiMessage += chunk;
-              aiMessageDiv.innerText = aiMessage;  // 仅显示 AI 回复内容
-              chatBox.scrollTop = chatBox.scrollHeight;  // 保持滚动条在底部
+
+              if (firstChunk) {
+                  aiMessageDiv.innerText = "🤖：" + aiMessage;
+                  firstChunk = false;
+              } else {
+                  aiMessageDiv.innerText = "🤖：" + aiMessage;
+              }
+
+              chatBox.scrollTop = chatBox.scrollHeight; // 保持滚动条在底部
           }
   
-          // 存储 AI 回复到历史记录，但不包含 "[AI]: "
+          // 存储 AI 回复到历史记录
           chatHistory.push({ type: "ai", text: aiMessage });
+          chatBox.scrollTop = chatBox.scrollHeight; // 滚到底
   
       } catch (error) {
           chatBox.innerHTML += `<div class="ai-message error">服务器错误，请检查 API 设置或网络连接。</div>`;
       }
+      inputField.focus();  // 聚焦输入框
     }
   
   
@@ -346,25 +526,85 @@
           chatBox.innerHTML += `<div class="ai-message">${entry.text}</div>`;
         }
       });
+      chatBox.scrollTop = chatBox.scrollHeight; // 保持滚动条在底部
+      document.getElementById('userInput')?.focus();  // 聚焦输入框
     }
 
-    // 保存聊天记录到本地存储或服务器
-    function saveChatHistory() {
-      try {
-          // 通过 API 保存到服务器
-          // fetch("/save_chat_history", {
-          //     method: "POST",
-          //     headers: { "Content-Type": "application/json" },
-          //     body: JSON.stringify(chatHistory)
-          // }).then(response => {
-          //     console.log("聊天记录已保存");
-          // }).catch(error => {
-          //     console.error("保存聊天记录失败", error);
-          // });
-      } catch (error) {
-          console.error("保存聊天记录时出错", error);
+    // 重启聊天框
+    function enableInput() {
+      const userInput = document.getElementById("userInput");
+      const sendButton = document.getElementById("sendButton");
+
+      if (userInput) {
+        userInput.disabled = false;
+        userInput.focus();
+
+        // 重新挂载事件
+        userInput.removeEventListener("keydown", handleKeyPress);
+        userInput.addEventListener("keydown", handleKeyPress);
+      }
+
+      if (sendButton) {
+        sendButton.removeEventListener("click", sendMessage);
+        sendButton.addEventListener("click", sendMessage);
       }
     }
+
+    // 显示删除确认模态框
+    function showDeleteConfirm(message, onConfirm) {
+      const modal = document.getElementById("deleteConfirmModal");
+      const overlay = document.getElementById("modalOverlay");
+      const confirmBtn = document.getElementById("confirmDeleteBtn");
+      const cancelBtn = document.getElementById("cancelDeleteBtn");
+      const text = document.getElementById("deleteConfirmText");
+
+      text.textContent = message;
+      modal.classList.add("active");
+      overlay.classList.add("active");
+
+      const cleanup = () => {
+        modal.classList.remove("active");
+        overlay.classList.remove("active");
+        confirmBtn.removeEventListener("click", onConfirmHandler);
+        cancelBtn.removeEventListener("click", cancelHandler);
+      };
+
+      const onConfirmHandler = () => {
+        cleanup();
+        onConfirm();
+      };
+
+      const cancelHandler = () => {
+        cleanup();
+        enableInput();
+      };
+
+      confirmBtn.addEventListener("click", onConfirmHandler);
+      cancelBtn.addEventListener("click", cancelHandler);
+    }
+
+    // 保存聊天记录
+    function saveChatHistory() {
+    if (!hasUnsavedChanges) return;
+    if (!chatHistory || chatHistory.length === 0) return;
+    const hasMeaningfulMessage = chatHistory.some(item => item.text && item.text.trim() !== "");
+    if (!hasMeaningfulMessage) return;
+
+    fetch("/save_history", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        chat: chatHistory,
+        filename: currentFilename // 这里很重要！
+      })
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.filename) currentFilename = data.filename; // 后端返回时刷新
+      hasUnsavedChanges = false;
+      hasDeletedOriginal = false;
+    });
+  }
   
     // 清空聊天窗口和聊天记录数组
     function clearChatWindow() {
@@ -373,6 +613,20 @@
             chatBox.innerHTML = ""; // 清空聊天窗口
         }
         chatHistory = []; // 重置聊天记录
+        currentFilename = null;
+        hasUnsavedChanges = false;
+        hasDeletedOriginal = false;
+        document.getElementById('userInput')?.focus();  // 聚焦输入框
+    }
+  });
+
+    window.addEventListener("beforeunload", function (event) {
+    // 自动保存聊天记录
+    if (chatHistory.length > 0) {
+      navigator.sendBeacon("/save_history", new Blob(
+        [JSON.stringify(chatHistory)], 
+        { type: "application/json" }
+      ));
     }
   });
     </script>    
