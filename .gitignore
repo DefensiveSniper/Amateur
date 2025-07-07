@@ -1,0 +1,8 @@
+config.json
+package.json
+__pycache__/
+.venv/
+build/
+dist/
+node_modules/
+flask_server.pyc
