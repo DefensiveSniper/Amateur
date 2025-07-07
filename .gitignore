@@ -6,4 +6,4 @@ build/
 dist/
 node_modules/
 flask_server.spec
-chat_history/
+chathistory/
