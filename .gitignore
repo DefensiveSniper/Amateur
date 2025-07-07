@@ -5,4 +5,5 @@ __pycache__/
 build/
 dist/
 node_modules/
-flask_server.pyc
+flask_server.spec
+chat_history/
