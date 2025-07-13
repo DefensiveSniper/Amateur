@@ -10,31 +10,20 @@ from datetime import datetime
 import uuid
 from threading import Thread
 import threading
+from func.name_title import *
+from func.download_aweme_list import *
+import random
 
+# 全局变量
 pending_threads = []
 CONFIG_PATH = "config.json"
 HISTORY_DIR = "chathistory"
 os.makedirs(HISTORY_DIR, exist_ok=True)
 PENDING_TASKS_PATH = "pending_summary_tasks.json"   # 新增：摘要待办队列
 
+# 初始化 Flask 应用
 app = Flask(__name__)
 CORS(app)  # 允许跨域请求
-
-def process_all_untitled_files():
-    for fname in os.listdir(HISTORY_DIR):
-        if fname.endswith(".json") and "_untitled_" in fname:
-            fpath = os.path.join(HISTORY_DIR, fname)
-            try:
-                with open(fpath, "r", encoding="utf-8") as f:
-                    chat = json.load(f)
-                summary = generate_summary_name(chat)
-                safe_summary = "".join(c for c in summary if c.isalnum() or c in " _-")[:30]
-                new_filename = f"{fname.split('_')[0]}_{safe_summary}.json"
-                new_path = os.path.join(HISTORY_DIR, new_filename)
-                os.rename(fpath, new_path)
-                print(f"已补偿命名: {new_filename}")
-            except Exception as e:
-                print(f"摘要补偿失败({fname}): {e}")
 
 # 设置模板目录
 @app.route("/")
@@ -47,13 +36,15 @@ def load_config():
         with open(CONFIG_PATH, "r", encoding="utf-8") as f:
             return json.load(f)
     return {
-        "provider": "openai",
-        "model": "gpt-4o",
-        "apiKeys": { "openai": "", "deepseek": "" }  # 记录不同 provider 的 API Key
+        "provider" : "openai",
+        "model" : "gpt-4o",
+        "apiKeys" : { "openai": "", "deepseek": "" },  # 记录不同 provider 的 API Key
+        
+        "cookie_str" : "",
+        "user_agent" : ""
     }
 
-# 全局配置
-config = load_config()
+config = load_config() # 全局配置
 
 # 初始化 OpenAI 客户端
 def create_client():
@@ -67,7 +58,16 @@ def create_client():
 
     return OpenAI(api_key=api_key, base_url=base_urls[provider])
 
-client = create_client()
+client = create_client() # 初始化 API 客户端
+
+# 将 cookie 字符串转换为结构化列表
+def cookie_str_to_dict(cookie):
+    result = {}
+    for item in cookie.split("; "):
+        if "=" in item:
+            k, v = item.split("=", 1)
+            result[k] = v
+    return result
 
 # 获取配置
 @app.route("/get_config", methods=["GET"])
@@ -113,6 +113,7 @@ def chat():
                 messages=[{"role": "user", "content": user_message}],
                 stream=True
             )
+            yield "🤖："
             for chunk in response:
                 if chunk.choices:
                     text = getattr(chunk.choices[0].delta, "content", "") or ""
@@ -145,48 +146,6 @@ def get_history():
         return jsonify(histories)
     except Exception as e:
         return jsonify({"error": "Failed to get history", "details": str(e)}), 500
-    
-# 用大模型生成聊天标题
-def generate_summary_name(chat):
-    try:
-        summary_prompt = (
-            "请为以下聊天生成一个简洁的文件名（不超过20个字符，不含标点符号，概括聊天内容，不要加引号）：\n\n"
-        )
-        formatted = "\n".join(f"[{'用户' if msg['type']=='user' else 'AI'}]：{msg['text']}" for msg in chat[-10:])
-        message = summary_prompt + formatted
-
-        response = client.chat.completions.create(
-            model=config["model"],
-            messages=[{"role": "user", "content": message}],
-        )
-        suggestion = response.choices[0].message.content.strip()
-        filename = "".join(c for c in suggestion if c.isalnum() or c in " _-")[:30]
-        return filename or f"untitled_{uuid.uuid4().hex[:6]}"
-    except Exception as e:
-        print("生成聊天摘要失败:", e)
-        return f"untitled_{uuid.uuid4().hex[:6]}"
-
-# 暂时不生成标题，使用 UUID 命名
-def async_save(chat, temp_filename):
-    def do_save():
-        try:
-            # 保存聊天内容
-            temp_path = os.path.join(HISTORY_DIR, temp_filename)
-            with open(temp_path, "w", encoding="utf-8") as f:
-                json.dump(chat, f, ensure_ascii=False, indent=2)
-            # 跑摘要+命名
-            summary = generate_summary_name(chat)
-            safe_summary = "".join(c for c in summary if c.isalnum() or c in " _-")[:30]
-            new_filename = f"{temp_filename.split('_')[0]}_{safe_summary}.json"
-            new_path = os.path.join(HISTORY_DIR, new_filename)
-            os.rename(temp_path, new_path)
-            print(f"聊天记录保存并命名成功：{new_filename}")
-        except Exception as e:
-            print(f"异步保存失败（保留原始文件名）：{e}")
-    # 启动普通线程（不是daemon）
-    t = threading.Thread(target=do_save)
-    t.start()
-    pending_threads.append(t)
 
 # 保存聊天记录
 @app.route('/save_history', methods=['POST'])
@@ -210,7 +169,7 @@ def save_history():
             temp_filename = f"{timestamp}_untitled_{uuid.uuid4().hex[:6]}.json"
         
         # 启动后台线程保存并命名
-        async_save(chat, temp_filename)
+        async_save(chat, temp_filename, HISTORY_DIR, client, pending_threads, config)
 
         return jsonify({"message": "History saving started", "filename": temp_filename})
     except Exception as e:
@@ -248,6 +207,106 @@ def delete_history():
     except Exception as e:
         return jsonify({"error": "Failed to delete", "details": str(e)}), 500
 
+# 抖音视频下载
+@app.route("/douyin_download", methods=["POST"])
+def douyin_download():
+    try:
+        data = request.json
+        sec_user_id = data.get("sec_user_id", "")
+        cookie_str = data.get("cookies", "")
+        user_agent = data.get("user_agent", "")
+        max_download_num = int(data.get("max_dloads", "1")) + 1
+        
+        headers = {
+            "user-agent": user_agent,
+            "accept": "application/json, text/plain, */*",
+            "referer": f"https://www.douyin.com/user/{sec_user_id}",
+        }
+        cookies = cookie_str_to_dict(cookie_str)
+        
+        max_cursor = 0 # 初始游标
+        has_more = True # 是否有更多数据
+        already_download_nums = 0 # 已下载数量
+        while has_more and already_download_nums < max_download_num:
+            url = (
+                f"https://www.douyin.com/aweme/v1/web/aweme/post/"
+                f"?device_platform=webapp"
+                f"&aid=6383"
+                f"&channel=channel_pc_web"
+                f"&sec_user_id={sec_user_id}"
+                f"&max_cursor={max_cursor}"
+                f"&locate_query=false"
+                f"&show_live_replay_strategy=1"
+                f"&need_time_list=0"
+                f"&time_list_query=0"
+                f"&whale_cut_token="
+                f"&cut_version=1"
+                f"&count=18"
+                f"&publish_video_strategy_type=2"
+                f"&from_user_page=1"
+                f"&update_version_code=170400"
+                f"&pc_client_type=1"
+                f"&pc_libra_divert=Windows"
+                f"&support_h265=1"
+                f"&support_dash=1"
+                f"&cpu_core_num=20"
+                f"&version_code=290100"
+                f"&version_name=29.1.0"
+                f"&cookie_enabled=true"
+                f"&screen_width=1920"
+                f"&screen_height=1080"
+                f"&browser_language=zh-CN"
+                f"&browser_platform=Win32"
+                f"&browser_name=Chrome"
+                f"&browser_version=138.0.0.0"
+                f"&browser_online=true"
+                f"&engine_name=Blink"
+                f"&engine_version=138.0.0.0"
+                f"&os_name=Windows"
+                f"&os_version=10"
+                f"&device_memory=8"
+                f"&platform=PC"
+                f"&downlink=10"
+                f"&effective_type=4g"
+                f"&round_trip_time=0"
+                # 下面三个参数建议每次抓包更新，能用多久看实际测试（校验很强时需每次刷新）
+                f"&webid=7526129557382022696"
+                f"&uifid=1b474bc7e0db9591e645dd8feb8c65aae4845018effd0c2743039a380ee647407b11caad055db1101605067df5d71c1a962911ed6ec8b6ccbf1f312aa53ebfef0b1b08a0a379c2967276081e6eb2e887dd1edefc03b5c507eafc9acca21d21f0c0ccfee80641703082ca7fbde935977c0ab08cb4add9c8ccb23b96ab45dc05da4d75f7dcd72110cca17f9b06cfcf87abf7f134a21a857cfcac83b5c96934ac01"
+                f"&verifyFp=verify_md029wd2_3kS1wqVh_n9fd_4Nm1_9t6m_UYfSfFJ3CEyZ"
+                f"&fp=verify_md029wd2_3kS1wqVh_n9fd_4Nm1_9t6m_UYfSfFJ3CEyZ"
+                f"&msToken=6E6fKhXCwb9q87wwnupNSMh-82Yvi5ReoyzcnMvROzhp7uEKaTfqQdstIuTJE9jq4OlayRWVZOQ0BNj81DbxMvjX975r2_C7V4TgJhXCh2RZPlATJiwrtSddasLTnEvDzpKzHAP0yjXnzBE12MFNG1lpj2qt73_Rg_RGJYXnLe2V"
+                f"&a_bogus=O60RhqyLQxRfFdFGmOra93clMyoArBSyBPTxRF%2FPCNY4G1Fa2SN7iPbcnxFaBqPLk8BskCIHfne%2FYdncKGXzZo9kLmkvSmwfZU%2Fcnz8o8qZdb4Jh7r8LebGEqiTY0CGYYQI9iZWRAsMC2dOWnrCwABI7u%2F3xRcEdFH3XV%2FYnY9u4USujin%2FVa3t2O7JqUD%3D%3D"
+            )
+            try:
+                r = requests.get(url, headers=headers, cookies=cookies, timeout=10)
+                r.raise_for_status()
+                data = r.json()
+            except Exception as e:
+                print("请求失败：", e)
+                break
+
+            aweme_list = data.get("aweme_list", [])
+            if not aweme_list:
+                print("无更多作品")
+                break
+
+            # 下载当前页数据
+            nums = download_aweme_list(
+                aweme_list, headers, already_download_nums, max_download_num
+            )
+            already_download_nums += nums
+            if already_download_nums >= max_download_num:
+                print(f"已达到最大下载数量 {max_download_num - 1}，停止下载。")
+                break
+
+            # 翻页判断
+            has_more = data.get("has_more", 0) == 1 and already_download_nums < max_download_num
+            max_cursor = data.get("max_cursor", 0)
+            time.sleep(1)  # 防ban
+            
+        return jsonify({"success": "下载完成", "total": already_download_nums}), 200
+    except Exception as e:
+        return jsonify({"error": "下载失败", "details": str(e)}), 500
 
 # 监听 SIGTERM 信号，优雅关闭 Flask 服务器
 def shutdown_server(signum, frame):
@@ -274,7 +333,7 @@ def monitor_parent():
         time.sleep(1)
 
 if __name__ == '__main__':
-    process_all_untitled_files()   # 自动补偿未命名聊天记录
+    process_all_untitled_files(HISTORY_DIR, client, config)   # 自动补偿未命名聊天记录
     monitor_thread = Thread(target=monitor_parent, daemon=True)
     monitor_thread.start()
     app.run(port=6969)

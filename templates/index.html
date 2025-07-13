@@ -64,9 +64,32 @@
                   <a href="https://hzihao.icu" target="_blank"><p>Amateur发电的地方</p></a>
                 </div>`,
         tools: `<div class="main-header fade-in">
-                <h2>一些可能有用的玩意</h2><h3>但是还没有想法</h3></div>
+                  <h2>一些可能有用的玩意</h2>
+                  <h3>但是还没有想法</h3>
+                </div>
                 <div class="cards-wrapper fade-in">
-                  <div class="card"><img src="/static/images/ela.png" alt="图片1"></div>
+                  <div class="card fade-in" style="max-width: 480px; margin: 0 auto; padding: 30px 30px 20px 30px; flex-direction: column; align-items: stretch;">
+                    <h2 style="margin: 0 auto; text-align: center;">抖音视频下载</h2>
+                    <form id="douyin-download-form" style="display: flex; flex-direction: column; gap: 22px;">
+                      <label>
+                        <span style="font-weight:500;">sec_user_id：</span>
+                        <input type="text" name="sec_user_id" id="sec_user_id" class="input-field" placeholder="请输入sec_user_id" required>
+                      </label>
+                      <label>
+                        <span style="font-weight:500;">cookies：</span>
+                        <input type="text" name="cookies" id="cookies" class="input-field" placeholder="请输入cookies" required>
+                      </label>
+                      <label>
+                        <span style="font-weight:500;">user_agent：</span>
+                        <input type="text" name="user_agent" id="user_agent" class="input-field" placeholder="请输入user_agent" required>
+                      </label>
+                      <label>
+                        <span style="font-weight:500;">最大下载个数：</span>
+                        <input type="number" name="max_dloads" id="max_dloads" class="input-field" placeholder="请输入最大下载个数" min="1" required value="10">
+                      </label>
+                      <button type="submit" id="start_dload" class="main-btn">开始下载</button>
+                    </form>
+                  </div>
                   <div class="card"><img src="/static/images/ela.png" alt="图片2"></div>
                   <div class="card"><img src="/static/images/ela.png" alt="图片3"></div>
                 </div>`,
@@ -157,6 +180,48 @@
         mainContent.innerHTML = "";
         setTimeout(() => {
           mainContent.innerHTML = pages[page];
+
+          if (page ==="tools") {
+            // 配置管理
+            const cookies = document.getElementById("cookies")
+            const user_agent = document.getElementById("user_agent")
+
+            fetch('/get_config')
+              .then(res => res.json())
+              .then(data => {
+                if(data.cookie_str) cookies.value = data.cookie_str
+                if(data.user_agent) user_agent.value = data.user_agent
+              })
+              .catch(error => {
+                  console.error("加载配置失败:", error);
+              });
+
+            const form = document.getElementById("douyin-download-form");
+            if (form) {
+              form.addEventListener("submit", async (e) => {
+                e.preventDefault();
+                const formData = new FormData(form);
+                const data = Object.fromEntries(formData.entries());
+                try {
+                  const response = await fetch("/douyin_download", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(data)
+                  });
+                  const result = await response.json();
+                  if (result.success) {
+                    alert(result.success);
+                  } else {
+                    alert(result.error + result.details);
+                  }
+                } catch (error) {
+                  console.error("下载请求失败：", error);
+                  alert("下载请求失败，请检查控制台日志。");
+                }
+              });
+            }
+          }
+
           if (page === "chat") {
               restoreChatHistory();
 
@@ -395,16 +460,16 @@
               .then(response => response.json())
               .then(data => {
                   if (data.provider) {
-                      providerSelect.value = data.provider;
+                    providerSelect.value = data.provider;
                   }
                   if (data.apiKeys) {
-                      apiKeys = data.apiKeys;
+                    apiKeys = data.apiKeys;
                   }
                   if (data.model) {
-                      updateModelOptions();
-                      modelSelect.value = data.model;
+                    updateModelOptions();
+                    modelSelect.value = data.model;
                   } else {
-                      updateModelOptions();
+                    updateModelOptions();
                   }
               })
               .catch(error => {
@@ -493,10 +558,10 @@
               aiMessage += chunk;
 
               if (firstChunk) {
-                  aiMessageDiv.innerText = "🤖：" + aiMessage;
+                  aiMessageDiv.innerText = aiMessage;
                   firstChunk = false;
               } else {
-                  aiMessageDiv.innerText = "🤖：" + aiMessage;
+                  aiMessageDiv.innerText = aiMessage;
               }
 
               chatBox.scrollTop = chatBox.scrollHeight; // 保持滚动条在底部
@@ -511,8 +576,6 @@
       }
       inputField.focus();  // 聚焦输入框
     }
-  
-  
   
     // 恢复聊天记录
     function restoreChatHistory() {
@@ -595,7 +658,7 @@
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         chat: chatHistory,
-        filename: currentFilename // 这里很重要！
+        filename: currentFilename
       })
     })
     .then(response => response.json())
@@ -620,7 +683,7 @@
     }
   });
 
-    window.addEventListener("beforeunload", function (event) {
+  window.addEventListener("beforeunload", function (event) {
     // 自动保存聊天记录
     if (chatHistory.length > 0) {
       navigator.sendBeacon("/save_history", new Blob(

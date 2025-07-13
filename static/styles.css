@@ -473,3 +473,40 @@ body, html {
 #deleteConfirmModal button {
   margin: 8px;
 }
+
+.input-field {
+  margin-top: 6px;
+  width: 100%;
+  padding: 8px 12px;
+  font-size: 15px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  background: #fff;
+  transition: border-color 0.2s;
+  box-sizing: border-box;
+}
+
+.input-field:focus {
+  border-color: #80c4ff;
+  outline: none;
+  background: #eaf6ff;
+}
+
+.main-btn {
+  margin-top: 8px;
+  padding: 11px 0;
+  background: linear-gradient(90deg, #51bfff 0%, #409eff 100%);
+  color: #fff;
+  font-size: 16px;
+  font-weight: bold;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(80,180,255,0.14);
+  transition: background 0.2s, transform 0.1s;
+}
+
+.main-btn:hover {
+  background: linear-gradient(90deg, #359efb 0%, #217be0 100%);
+  transform: translateY(-2px) scale(1.02);
+}
