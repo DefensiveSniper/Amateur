@@ -25,7 +25,7 @@ Amateur 是一个实验性应用，旨在探索 Electron + Flask + HTML/CSS/JS �
 ## 运行方式
 1. 克隆本项目：
    ```sh
-   git clone https://github.com/your-repo/amateur.git
+   https://github.com/DefensiveSniper/Amateur.git
    cd amateur
    ```
 2. 安装依赖：
