@@ -15,7 +15,7 @@ def generate_summary_name(chat, client, config):
         message = summary_prompt + formatted
 
         response = client.chat.completions.create(
-            model=config["model"],
+            model=config["chat"]["model"],
             messages=[{"role": "user", "content": message}],
         )
         suggestion = response.choices[0].message.content.strip()

@@ -2,11 +2,26 @@
 <html lang="zh">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Amateur</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
   <script src="https://kit.fontawesome.com/c0fb207afc.js" crossorigin="anonymous"></script>
 </head>
 <body>
+  <div id="downloadModal" class="download-modal" style="z-index:9999;display:none;">
+    <div>
+      <h3>下载进度</h3>
+      <div id="downloadProgressBar" style="height:20px;background:#eee;border-radius:8px;margin-bottom:10px;">
+        <div id="downloadProgress" style="height:100%;width:0%;background:#55cc88;border-radius:8px;text-align:center;color:#fff;line-height:20px;">0%</div>
+      </div>
+      <div id="downloadLog" style="height:180px;overflow-y:auto;background:#f7f7f7;border:1px solid #ccc;padding:10px;font-size:13px;"></div>
+      <button onclick="hideDownloadModal()">关闭</button>
+    </div>
+  </div>
+  <style>
+  .download-modal { position:fixed; left:0; top:0; width:100vw; height:100vh; background:rgba(0,0,0,.17); display:flex; align-items:center; justify-content:center; z-index:9999; }
+  .download-modal > * { background:#fff; border-radius:12px; box-shadow:0 4px 16px #0001; min-width:330px; padding:24px 16px 16px 16px; }
+  </style>
   <div class="container">
     <!-- 左侧导航栏 -->
     <aside class="sidebar">
@@ -49,12 +64,13 @@
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
   <script>
+  document.addEventListener('DOMContentLoaded', function() {
     let chatHistory = []; // 存储聊天内容
     let currentFilename = null;    // 当前聊天的历史文件名
     let hasUnsavedChanges = false; // 当前聊天内容是否有未保存更改
     let hasDeletedOriginal = false;// 是否已经删除过原有聊天文件（防止重复删）
+    let douyinFormCache = {}; // 存储视频下载表单
 
-    document.addEventListener('DOMContentLoaded', function() {
       const menuItems = document.querySelectorAll('.menu-item');
       const mainContent = document.querySelector('.main-content');
     
@@ -65,32 +81,34 @@
                 </div>`,
         tools: `<div class="main-header fade-in">
                   <h2>一些可能有用的玩意</h2>
-                  <h3>但是还没有想法</h3>
                 </div>
-                <div class="cards-wrapper fade-in">
-                  <div class="card fade-in" style="max-width: 480px; margin: 0 auto; padding: 30px 30px 20px 30px; flex-direction: column; align-items: stretch;">
-                    <h2 style="margin: 0 auto; text-align: center;">抖音视频下载</h2>
+                <div class="cards-wrapper" id="cards-wrapper">
+                  <div class="card"><img src="/static/images/ela.png" alt="图片1"></div>
+                  <div class="card" style="max-width: 480px; margin: 0 auto; padding: 30px 30px 20px 30px; flex-direction: column; align-items: stretch;">
+                    <h2 style="margin: 0 auto; text-align: center;">抖音主页视频下载</h2>
                     <form id="douyin-download-form" style="display: flex; flex-direction: column; gap: 22px;">
                       <label>
-                        <span style="font-weight:500;">sec_user_id：</span>
+                        <span style="font-weight:500;">sec_user_id(主页链接中'user/'后的字符串MS4开头)</span>
                         <input type="text" name="sec_user_id" id="sec_user_id" class="input-field" placeholder="请输入sec_user_id" required>
                       </label>
                       <label>
-                        <span style="font-weight:500;">cookies：</span>
-                        <input type="text" name="cookies" id="cookies" class="input-field" placeholder="请输入cookies" required>
+                        <span style="font-weight:500;">cookies</span>
+                        <input type="text" name="cookies" id="cookies" class="input-field" placeholder="放空则进行扫码自动填充">
                       </label>
                       <label>
-                        <span style="font-weight:500;">user_agent：</span>
-                        <input type="text" name="user_agent" id="user_agent" class="input-field" placeholder="请输入user_agent" required>
+                        <span style="font-weight:500;">msToken</span>
+                        <input type="text" name="msToken" id="msToken" class="input-field" placeholder="放空则进行扫码自动填充">
                       </label>
                       <label>
-                        <span style="font-weight:500;">最大下载个数：</span>
-                        <input type="number" name="max_dloads" id="max_dloads" class="input-field" placeholder="请输入最大下载个数" min="1" required value="10">
+                        <span style="font-weight:500;">最大下载视频数</span>
+                        <input type="number" name="max_dloads" id="max_dloads" class="input-field" placeholder="请输入最大下载视频数" min="1" required>
                       </label>
-                      <button type="submit" id="start_dload" class="main-btn">开始下载</button>
+                      <div style="display: flex; flex-direction: row; gap: 18px;">
+                        <button type="submit" id="start_dload" class="main-btn" style="flex: 7;">开始下载</button>
+                        <button type="button" id="saveConfigBtn" class="main-btn" style="flex: 3;">保存</button>
+                      </div>
                     </form>
                   </div>
-                  <div class="card"><img src="/static/images/ela.png" alt="图片2"></div>
                   <div class="card"><img src="/static/images/ela.png" alt="图片3"></div>
                 </div>`,
         chat: `<div class="chat-container">
@@ -160,11 +178,24 @@
               <button id="cancelDeleteBtn">取消</button>
             </div>
             `,
-        about: `<div class="page-content fade-in">
-                  <div class="main-header"><h2>一些可能有用的信息</h2></div>
+        about: `<div class="page-content">
+                  <div class="main-header fade-in"><h2>一些可能有用的信息</h2></div>
                   <div class="about-content"><p>本应用由Amateur个人独立使用AI开发。</p></div>
                 </div>`,
       };
+
+    if (mainContent.innerHTML.includes('douyin-download-form')) {
+      // 有 tools 表单，保存
+      const form = document.getElementById('douyin-download-form');
+      if (form) {
+        douyinFormCache = {
+          sec_user_id: form.sec_user_id.value,
+          cookies: form.cookies.value,
+          msToken: form.msToken.value,
+          max_dloads: form.max_dloads.value,
+        };
+      }
+    }
 
     // 默认显示主页
     mainContent.innerHTML = pages.home;
@@ -177,31 +208,113 @@
         item.classList.add('active');
         const page = item.getAttribute('data-page');
 
-        mainContent.innerHTML = "";
-        setTimeout(() => {
-          mainContent.innerHTML = pages[page];
+        mainContent.innerHTML = pages[page];
 
-          if (page ==="tools") {
-            // 配置管理
-            const cookies = document.getElementById("cookies")
-            const user_agent = document.getElementById("user_agent")
+        if (page ==="tools") {
+          // 配置管理
+          const sec_user_id = document.getElementById("sec_user_id");
+          const cookies = document.getElementById("cookies");
+          const msToken = document.getElementById("msToken");
+          const max_dloads = document.getElementById("max_dloads");
 
-            fetch('/get_config')
-              .then(res => res.json())
-              .then(data => {
-                if(data.cookie_str) cookies.value = data.cookie_str
-                if(data.user_agent) user_agent.value = data.user_agent
-              })
-              .catch(error => {
-                  console.error("加载配置失败:", error);
-              });
+          // 获取视频下载参数
+          fetch('/get_config')
+          .then(response => response.json())
+          .then(data => {
+            if(data.tools && data.tools.cookies) cookies.value = data.tools.cookies
+            if(data.tools && data.tools.msToken) msToken.value = data.tools.msToken
+            if(data.tools && data.tools.sec_user_id) sec_user_id.value = data.tools.sec_user_id;
+            if(data.tools && data.tools.max_dloads) max_dloads.value = data.tools.max_dloads;
+            
+            // 再用本地缓存覆盖（如果有缓存）
+            if (douyinFormCache) {
+              if (douyinFormCache.sec_user_id) document.getElementById('sec_user_id').value = douyinFormCache.sec_user_id;
+              if (douyinFormCache.cookies) document.getElementById('cookies').value = douyinFormCache.cookies;
+              if (douyinFormCache.msToken) document.getElementById('msToken').value = douyinFormCache.msToken;
+              if (douyinFormCache.max_dloads) document.getElementById('max_dloads').value = douyinFormCache.max_dloads;
+            }
 
-            const form = document.getElementById("douyin-download-form");
-            if (form) {
-              form.addEventListener("submit", async (e) => {
-                e.preventDefault();
-                const formData = new FormData(form);
-                const data = Object.fromEntries(formData.entries());
+            // ----------- 监听表单输入，实时写入缓存 -----------
+            ['sec_user_id', 'cookies', 'msToken', 'max_dloads'].forEach(id => {
+              const el = document.getElementById(id);
+              if (el) {
+                el.addEventListener('input', () => {
+                  douyinFormCache[id] = el.value;
+                });
+              }
+            });
+          });
+
+          // 定义表单和保存按钮
+          const form = document.getElementById("douyin-download-form");
+          const saveConfigBtn = document.getElementById("saveConfigBtn");
+          
+          if (saveConfigBtn && form) {
+            saveConfigBtn.addEventListener("click", async () => {
+              const formData = new FormData(form);
+              const data = Object.fromEntries(formData.entries());
+              // 保存字段
+              try {
+                const response = await fetch("/save_config", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify(data)
+                });
+                const result = await response.json();
+                if (response.ok) {
+                  showToast("配置已保存！")
+                } else {
+                  showToast(result.error || "保存失败", 2500);
+                }
+              } catch (e) {
+                showToast("保存请求失败", 2500);
+              }
+            });
+          }
+
+          if (form) {
+            form.addEventListener("submit", async (e) => {
+              e.preventDefault();
+              const formData = new FormData(form);
+              const data = Object.fromEntries(formData.entries());
+              if(data.cookies == "" || data.msToken == "") {
+                showToast("请先进行扫码登录");
+                try {
+                  const response = await fetch("/douyin_login",{
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(data)
+                  });
+                  showToast("登录中，请稍后...");
+                  const result = await response.json();
+                  console.log('登录响应数据:', result); // 调试信息
+                  if (result.success) {
+                    showToast("登录成功！");
+                    // 把获取的cookie和msToken填入表单
+                    console.log('检查tools数据:', result.tools); // 调试信息
+                    if (result.tools && result.tools.cookies) {
+                      console.log('填入cookies:', result.tools.cookies); // 调试信息
+                      document.getElementById('cookies').value = result.tools.cookies;
+                      // 更新缓存
+                      douyinFormCache.cookies = result.tools.cookies;
+                    }
+                    if (result.tools && result.tools.msToken) {
+                      console.log('填入msToken:', result.tools.msToken); // 调试信息
+                      document.getElementById('msToken').value = result.tools.msToken;
+                      // 更新缓存
+                      douyinFormCache.msToken = result.tools.msToken;
+                    }
+                    // 自动保存配置
+                    saveConfigBtn.click();
+                  } else {
+                    showToast(result.error || "登录失败");
+                  }
+                } catch (error) {
+                  console.error('登录请求失败:', error);
+                  showToast("登录请求失败，请检查网络连接");
+                }
+              }
+              else{
                 try {
                   const response = await fetch("/douyin_download", {
                     method: "POST",
@@ -209,77 +322,78 @@
                     body: JSON.stringify(data)
                   });
                   const result = await response.json();
-                  if (result.success) {
-                    alert(result.success);
+                  if (result.success && result.task_id) {
+                    showDownloadModal(); // 显示弹窗
+                    listenDownloadProgress(result.task_id); // 开始监听日志
                   } else {
-                    alert(result.error + result.details);
+                    showToast(result.error + result.details || "下载任务启动失败");
+                    hideDownloadModal();
                   }
                 } catch (error) {
-                  console.error("下载请求失败：", error);
-                  alert("下载请求失败，请检查控制台日志。");
+                  showToast("下载请求失败，请检查控制台日志。");
+                  hideDownloadModal();
                 }
-              });
-            }
+              }
+            });
           }
+        }
 
-          if (page === "chat") {
-              restoreChatHistory();
+        if (page === "chat") {
+            restoreChatHistory();
 
-              // 确保事件不重复绑定
-              const sendButton = document.getElementById("sendButton");
-              const userInput = document.getElementById("userInput");
-              if (sendButton) {
-                  sendButton.removeEventListener("click", sendMessage);
-                  sendButton.addEventListener("click", sendMessage);
-              }
-              if (userInput) {
-                  userInput.removeEventListener("keydown", handleKeyPress);
-                  userInput.addEventListener("keydown", handleKeyPress);
-                  userInput.disabled = false;
-                  userInput.focus();
-              }
+            // 确保事件不重复绑定
+            const sendButton = document.getElementById("sendButton");
+            const userInput = document.getElementById("userInput");
+            if (sendButton) {
+                sendButton.removeEventListener('click', sendMessage);
+                sendButton.addEventListener('click', sendMessage);
+            }
+            if (userInput) {
+                userInput.removeEventListener('keydown', handleKeyPress);
+                userInput.addEventListener('keydown', handleKeyPress);
+            }
+            
+            const configButton = document.getElementById("configApiButton");
+            if (configButton) {
+                configButton.addEventListener("click", function () {
+                    document.getElementById("configModal").classList.add("active");
+                    document.getElementById("modalOverlay").classList.add("active");
+    
+                    fetch("/get_config")
+                    .then(response => response.json())
+                    .then(config => {
+                        document.getElementById("provider").value = config.chat.provider;
+                        updateModelOptions();
+                        document.getElementById("model").value = config.chat.model;
+                        document.getElementById("apiKey").value = config.chat.apiKeys[config.chat.provider] || "";
+                    })
+                    .catch(error => {
+                        console.error("加载配置失败:", error);
+                    });
+                });
+            }
       
-              const configButton = document.getElementById("configApiButton");
-              if (configButton) {
-                  configButton.addEventListener("click", function () {
-                      document.getElementById("configModal").classList.add("active");
-                      document.getElementById("modalOverlay").classList.add("active");
-      
-                      fetch("/get_config")
-                          .then(response => response.json())
-                          .then(config => {
-                              document.getElementById("provider").value = config.provider;
-                              updateModelOptions();
-                              document.getElementById("model").value = config.model;
-                              document.getElementById("apiKey").value = config.apiKeys[config.provider] || "";
-                          })
-                          .catch(error => {
-                              console.error("加载配置失败:", error);
-                          });
-                  });
-              }
-      
-              document.getElementById("closeModal").addEventListener("click", function () {
-                  document.getElementById("configModal").classList.remove("active");
-                  document.getElementById("modalOverlay").classList.remove("active");
-              });
+            document.getElementById("closeModal").addEventListener("click", function () {
+                document.getElementById("configModal").classList.remove("active");
+                document.getElementById("modalOverlay").classList.remove("active");
+            });
 
-              const historyButton = document.getElementById("historyButton");
-              const historyModal = document.getElementById("historyModal");
-              const historyList = document.getElementById("historyList");
-              const modalOverlay = document.getElementById("modalOverlay");
+            const historyButton = document.getElementById("historyButton");
+            const historyModal = document.getElementById("historyModal");
+            const historyList = document.getElementById("historyList");
+            const modalOverlay = document.getElementById("modalOverlay");
 
-              if (historyButton && historyModal && historyList && modalOverlay) {
+            if (historyButton && historyModal && historyList && modalOverlay) {
                 historyButton.addEventListener("click", function () {
-                  modalOverlay.classList.add("active");
-                  historyModal.classList.add("active");
+                    modalOverlay.classList.add("active");
+                    historyModal.classList.add("active");
 
-                  // 请求历史记录
-                  fetch("/get_history")
-                    .then(res => res.json())
-                    .then(data => {
-                      historyList.innerHTML = "";
-                      if (Array.isArray(data)) {
+                    // 请求历史记录
+                    fetch("/get_history")
+                        .then(res => res.json())
+                        .then(data => {
+                            historyList.innerHTML = "";
+                            if (Array.isArray(data)) {
                         data.forEach(item => {
                           const title = item.filename.split("_").slice(1).join("_").replace(".json", "");
                           // 外层容器
@@ -359,8 +473,7 @@
 
                               enableInput(); // 确保恢复
                             });
-                          }
-                          );
+                          });
                         
                           // 组装到页面
                           entry.appendChild(titleDiv);
@@ -425,9 +538,9 @@
                   }
                   apiKeys[selectedProvider] = apiKeyInput.value;
                   const config = {
-                      provider: selectedProvider,
-                      model: modelSelect.value,
-                      apiKeys: apiKeys
+                    provider: selectedProvider,
+                    model: modelSelect.value,
+                    apiKeys: apiKeys,
                   };
                   fetch("/save_config", {
                       method: "POST",
@@ -436,7 +549,8 @@
                   })
                   .then(response => response.json())
                   .then(data => {
-                    console.log("配置已保存!");
+                    // console.log("配置已保存!");
+                    showToast("配置已保存!");
             
                     // 关闭配置窗口
                     document.getElementById("configModal").classList.remove("active");
@@ -452,22 +566,21 @@
                   .catch(error => {
                       console.error("保存失败:", error);
                   });
-                }
-              );
+              });
       
               // 初始化配置
               fetch("/get_config")
               .then(response => response.json())
-              .then(data => {
-                  if (data.provider) {
-                    providerSelect.value = data.provider;
+              .then(config => {
+                  if (config.chat.provider) {
+                    providerSelect.value = config.chat.provider;
                   }
-                  if (data.apiKeys) {
-                    apiKeys = data.apiKeys;
+                  if (config.chat.apiKeys) {
+                    apiKeys = config.chat.apiKeys;
                   }
-                  if (data.model) {
+                  if (config.chat.model) {
                     updateModelOptions();
-                    modelSelect.value = data.model;
+                    modelSelect.value = config.chat.model;
                   } else {
                     updateModelOptions();
                   }
@@ -483,9 +596,7 @@
                 clearChatWindow();
                 hasUnsavedChanges = false;
               });
-          }
-      }, 50);      
-      });
+        }
     });
   
     // 监听回车键
@@ -526,7 +637,7 @@
   
       // 记录并更新 UI
       chatHistory.push({ type: "user", text: message });
-      chatBox.innerHTML += `<div class="user-message">🧑：${message}</div>`;
+      chatBox.innerHTML += `<div class="user-message">用户：${message}</div>`;
       inputField.value = '';
 
       // 检查是否有未保存的更改
@@ -604,12 +715,12 @@
 
         // 重新挂载事件
         userInput.removeEventListener("keydown", handleKeyPress);
-        userInput.addEventListener("keydown", handleKeyPress);
+        userInput.addEventListener('keydown', handleKeyPress);
       }
 
       if (sendButton) {
         sendButton.removeEventListener("click", sendMessage);
-        sendButton.addEventListener("click", sendMessage);
+        sendButton.addEventListener('click', sendMessage);
       }
     }
 
@@ -642,38 +753,38 @@
         enableInput();
       };
 
-      confirmBtn.addEventListener("click", onConfirmHandler);
-      cancelBtn.addEventListener("click", cancelHandler);
+      confirmBtn.addEventListener('click', onConfirmHandler);
+      cancelBtn.addEventListener('click', cancelHandler);
     }
 
     // 保存聊天记录
     function saveChatHistory() {
-    if (!hasUnsavedChanges) return;
-    if (!chatHistory || chatHistory.length === 0) return;
-    const hasMeaningfulMessage = chatHistory.some(item => item.text && item.text.trim() !== "");
-    if (!hasMeaningfulMessage) return;
+      if (!hasUnsavedChanges) return;
+      if (!chatHistory || chatHistory.length === 0) return;
+      const hasMeaningfulMessage = chatHistory.some(item => item.text && item.text.trim() !== "");
+      if (!hasMeaningfulMessage) return;
 
-    fetch("/save_history", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        chat: chatHistory,
-        filename: currentFilename
+      fetch("/save_history", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          chat: chatHistory,
+          filename: currentFilename
+        })
       })
-    })
-    .then(response => response.json())
-    .then(data => {
-      if (data.filename) currentFilename = data.filename; // 后端返回时刷新
-      hasUnsavedChanges = false;
-      hasDeletedOriginal = false;
-    });
-  }
+      .then(response => response.json())
+      .then(data => {
+        if (data.filename) currentFilename = data.filename; // 后端返回时刷新
+        hasUnsavedChanges = false;
+        hasDeletedOriginal = false;
+      });
+    }
   
     // 清空聊天窗口和聊天记录数组
     function clearChatWindow() {
         const chatBox = document.getElementById('chat-box');
         if (chatBox) {
-            chatBox.innerHTML = ""; // 清空聊天窗口
+            chatBox.innerHTML = ''; // 清空聊天窗口
         }
         chatHistory = []; // 重置聊天记录
         currentFilename = null;
@@ -681,17 +792,74 @@
         hasDeletedOriginal = false;
         document.getElementById('userInput')?.focus();  // 聚焦输入框
     }
-  });
 
-  window.addEventListener("beforeunload", function (event) {
-    // 自动保存聊天记录
-    if (chatHistory.length > 0) {
-      navigator.sendBeacon("/save_history", new Blob(
-        [JSON.stringify(chatHistory)], 
-        { type: "application/json" }
-      ));
+    window.addEventListener("beforeunload", function (event) {
+      // 自动保存聊天记录
+      if (chatHistory.length > 0) {
+        navigator.sendBeacon("/save_history", new Blob(
+          [JSON.stringify(chatHistory)], 
+          { type: 'application/json' }
+        ));
+      }
+    });
+  }); // 闭合 DOMContentLoaded 事件监听器
+}); // 闭合 document.addEventListener
+
+  // 下载弹窗控制
+  function showDownloadModal() {
+      document.getElementById('downloadModal').style.display = 'flex';
+  }
+  function hideDownloadModal() {
+      document.getElementById('downloadModal').style.display = 'none';
+      // 清空日志
+      // document.getElementById('downloadLog').innerHTML = '';
+      // document.getElementById('downloadProgress').style.width = "0%";
+      // document.getElementById('downloadProgress').innerText = '0%';
+  }
+
+  // Socket.io 实时日志
+  let dlsocket = null;
+  function listenDownloadProgress(task_id) {
+      if (dlsocket) dlsocket.disconnect();
+      dlsocket = io(); // 默认连接 / (如后端改了命名空间需对应)
+      const logBox = document.getElementById('downloadLog');
+      const bar = document.getElementById('downloadProgress');
+      dlsocket.emit('join_download', {task_id});
+      dlsocket.on('dlog', msg => {
+          logBox.innerHTML += msg.text + '<br>';
+          logBox.scrollTop = logBox.scrollHeight;
+      });
+      dlsocket.on('dprogress', data => {
+          bar.style.width = data.percent + "%";
+          bar.innerText = Math.floor(data.percent) + "%";
+      });
+      dlsocket.on('dfinish', data => {
+          bar.style.width = "100%";
+          bar.innerText = "100%";
+          logBox.innerHTML += '<b>全部下载完成</b><br>';
+      });
+  }
+
+  // 自定义弹窗
+  function showToast(msg, duration = 2000) {
+      const toast = document.getElementById('custom-toast');
+      toast.innerText = msg;
+      toast.style.display = 'block';
+      setTimeout(() => toast.classList.add('active'), 5);
+      setTimeout(() => {
+        toast.classList.remove('active');
+        setTimeout(() => toast.style.display = 'none', 350);
+      }, duration);
     }
-  });
-    </script>    
-  </body>
+    // 支持点击遮罩关闭当前弹窗
+    document.body.addEventListener("click", function(e) {
+      // 只要点击在遮罩上就关闭弹窗
+      if (e.target.classList.contains("modal-overlay") || e.target.id === "modalOverlay") {
+        document.querySelectorAll('.modal').forEach(m => m.classList.remove('active'));
+        document.querySelectorAll('.modal-overlay, #modalOverlay').forEach(o => o.classList.remove('active'));
+      }
+    });
+</script>
+  <div id="custom-toast" style="display:none"></div>
+</body>
 </html>
