@@ -4,9 +4,9 @@ import os
 import random
 import string
 
-def download_aweme_list(data, headers, already_download_nums, max_download_num, log=lambda x: None):
+def download_aweme_list(data, headers, already_download_nums, max_download_num, log=lambda x, y: None, task_id=None):
     if not data:
-        log("无内容，跳过。")
+        log("无内容，跳过。", task_id)
         return
     author = data[0]['author']['nickname']# 获取作者ID
     os.makedirs(f"./media/{author}/images", exist_ok=True)  # 创建作者视频文件夹
@@ -35,10 +35,10 @@ def download_aweme_list(data, headers, already_download_nums, max_download_num, 
                 
                 with open(f"media/{author}/videos/{title_ulti}.mp4", 'wb') as f:
                     f.write(res_video)  
-                    log(f"视频: {title_ulti} 下载完成")  # 打印下载完成信息
+                    log(f"视频: {title_ulti} 下载完成", task_id)  # 打印下载完成信息
                     continue
             except Exception as e:
-                log(f"{title_ulti} 视频下载出错: {e}")
+                log(f"{title_ulti} 视频下载出错: {e}", task_id)
             
         # 动图、图片
         else:
@@ -49,9 +49,9 @@ def download_aweme_list(data, headers, already_download_nums, max_download_num, 
                     filename = f"{title_ulti}_{idx}.mp4"
                     with open(f"media/{author}/videos/{filename}", 'wb') as f:
                         f.write(res_gif)
-                        log(f"动图：{filename} 下载完成")
+                        log(f"动图：{filename} 下载完成", task_id)
                 except Exception as e:
-                    log(f"{title_ulti} 不是图片视频。报错信息：{e}")
+                    log(f"{title_ulti} 不是图片视频。报错信息：{e}", task_id)
             
             # 图片
             for idx, j in enumerate(i['images']):
@@ -61,10 +61,10 @@ def download_aweme_list(data, headers, already_download_nums, max_download_num, 
                     filename = f"{title_ulti}_{idx}.webp"
                     with open(f"media/{author}/images/{filename}", 'wb') as f:
                         f.write(res_image)
-                        log(f"图片：{filename} 下载完成")
+                        log(f"图片：{filename} 下载完成", task_id)
                         
-                except:
-                    log(f"{title_ulti} 不是图片视频。报错信息：{e}")
+                except Exception as e:
+                    log(f"{title_ulti} 不是图片视频。报错信息：{e}", task_id)
             
             nums += 1 # 增加下载计数
             if nums + already_download_nums >= max_download_num:

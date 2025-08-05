@@ -1,12 +1,13 @@
 import eventlet
 eventlet.monkey_patch()
+from engineio.async_drivers import eventlet
 import os
 import json
 import signal
 import time
 import psutil
-import asyncio
 import requests
+from typing import Dict
 from flask import Flask, request, jsonify, render_template, Response
 from flask_cors import CORS
 from openai import OpenAI
@@ -14,17 +15,17 @@ from datetime import datetime
 import uuid
 from uuid import uuid4
 from threading import Thread
-import threading
 from func.name_title import *
-from func.download_aweme_list import *
-import random
+import logging
 import urllib.parse
+from func.download_aweme_list import *
+from func.download_single import download_single
 from flask_socketio import SocketIO, emit, join_room
-from func.cookie_str_to_dict import cookie_str_to_dict
 from playwright.async_api import async_playwright
 from func.login_douyin import DouYinLogin
 from func.get_a_bogus import *
 from func.logger import logger
+from func.get_aweme_id import get_aweme_id
 
 # 全局变量
 pending_threads = []
@@ -37,7 +38,7 @@ PENDING_TASKS_PATH = "pending_summary_tasks.json"   # 新增：摘要待办队�
 # 初始化 Flask 应用
 app = Flask(__name__)
 CORS(app)  # 允许跨域请求
-socketio = SocketIO(app, cors_allowed_origins="*") # 初始化 SocketIO
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet') # 初始化 SocketIO
 
 # 设置模板目录
 @app.route("/")
@@ -110,6 +111,12 @@ def save_config():
         # 判断属于哪个部分并更新
         if "sec_user_id" in data:  # tools配置
             config["tools"] = data
+        elif "cookies_specific" in data:
+            config["tools"]["cookies"] = data["cookies_specific"]
+            config["tools"]["msToken"] = data["msToken_specific"]
+        elif "cookies_following" in data:
+            config["tools"]["cookies"] = data["cookies_following"]
+            config["tools"]["msToken"] = data["msToken_following"]
         elif "provider" in data:   # chat配置
             config["chat"] = data
         else:
@@ -141,16 +148,14 @@ def chat():
                 messages=[{"role": "user", "content": user_message}],
                 stream=True
             )
-            yield "🤖："
             for chunk in response:
                 if chunk.choices:
                     text = getattr(chunk.choices[0].delta, "content", "") or ""
-                    yield text
-                else:
-                    yield "[Empty Response Chunk]"
+                    if text:
+                        yield f"data: {text}\n\n"
         return Response(generate(), mimetype='text/plain')
     except Exception as e:
-        print("Error in /chat:", str(e))
+        logger.info("Error in /chat:", str(e))
         return jsonify({"error": "服务器内部错误", "details": str(e)}), 500
 
 # 获取聊天记录
@@ -280,13 +285,11 @@ async def douyin_login():
                     cookies = await context.cookies()
                     cookie_str = "; ".join([f"{c['name']}={c['value']}" for c in cookies if c['name']])
                     data["cookies"] = cookie_str
-                    # logger.info(f"] 获取到的cookies: {cookie_str[:100]}...")
 
                     # 获取 params 中的 msToken
                     local_storage: Dict = await page.evaluate("() => window.localStorage")
                     msToken = local_storage.get("xmst", "")
                     data["msToken"] = msToken
-                    # logger.info(f"获取到的msToken: {msToken}")
                 
                 # 保存配置（只有在获取到有效数据时才保存）
                 if cookie_str and msToken:
@@ -308,9 +311,13 @@ async def douyin_login():
     except Exception as e:
         return jsonify({"error": "登录失败", "details": str(e)}), 500
     
-# 抖音视频下载
-@app.route("/douyin_download", methods=["POST"])
-def douyin_download():
+# 用于发日志/进度到前端下载窗口
+def log_func(msg, task_id):
+    socketio.emit("dlog", {"text": msg}, room=task_id)
+    
+# 抖音用户主页视频下载
+@app.route("/douyin_user_download", methods=["POST"])
+def douyin_user_download():
     try:
         data = request.json
         sec_user_id = data.get("sec_user_id", "")
@@ -332,14 +339,13 @@ def douyin_download():
             return
         
         task_id = str(uuid4())
+        log_func("开始下载抖音用户主页视频", task_id)
         def background_download():
             already_download_nums = 0
             max_cursor = 0
             has_more = True
+            author = "未知用户"  # 初始化author变量，防止UnboundLocalError
             
-            # 用于发日志/进度到前端
-            def log_func(msg):
-                socketio.emit("dlog", {"text": msg}, room=task_id)
             while has_more and already_download_nums < max_download_num:
                 url = (
                     f"https://www.douyin.com/aweme/v1/web/aweme/post/"
@@ -393,25 +399,29 @@ def douyin_download():
                     response.raise_for_status()
                     data = response.json()
                 except Exception as e:
-                    log_func(f"请求失败：{e}")
+                    log_func(f"请求失败：cookies失效，请清空cookies后点击下载获取新cookies", task_id)
+                    logger.error(f"请求失败：cookies失效，请清空cookies后点击下载获取新cookies")
                     break
 
                 aweme_list = data.get("aweme_list", [])
+                log_func(f"当前页作品数量: {len(aweme_list)}", task_id)
                 logger.info(f"当前页作品数量: {len(aweme_list)}")
                 if not aweme_list:
-                    log_func("无更多作品")
+                    log_func("无更多作品", task_id)
+                    logger.info("无更多作品")
                     break
 
                 # 下载
                 nums, author = download_aweme_list(
-                    aweme_list, headers, already_download_nums, max_download_num, log=log_func
+                    aweme_list, headers, already_download_nums, max_download_num, log=log_func, task_id=task_id
                 )
                 already_download_nums += nums
                 percent = min(100, already_download_nums / max_download_num * 100)
                 socketio.emit("dprogress", {"percent": percent}, room=task_id)
                 
                 if already_download_nums >= max_download_num:
-                    log_func(f"已达到最大下载数量 {max_download_num - 1}，停止下载。")
+                    log_func(f"已达到最大下载数量 {max_download_num}，停止下载。", task_id)
+                    logger.info(f"已达到最大下载数量 {max_download_num}，停止下载。")
                     break
 
                 # 翻页判断
@@ -419,7 +429,8 @@ def douyin_download():
                 max_cursor = data.get("max_cursor", 0)
                 time.sleep(1)  # 防ban
                 
-            log_func(f"用户 <{author}> 的作品下载完成，总计：{already_download_nums} 个")
+            log_func(f"用户 <{author}> 的作品下载完成，总计：{already_download_nums} 个", task_id)
+            logger.info(f"用户 <{author}> 的作品下载完成，总计：{already_download_nums} 个")
             
             socketio.emit("dprogress", {"percent": 100}, room=task_id)
             socketio.emit("dfinish", {"msg": "全部下载完成"}, room=task_id)
@@ -427,23 +438,85 @@ def douyin_download():
         Thread(target=background_download, daemon=True).start()
         return jsonify({"success": "下载任务已启动", "task_id": task_id}), 200
     except Exception as e:
+        log_func(f"下载失败：{e}", task_id)
+        logger.error(f"下载失败：{e}")
         return jsonify({"error": "下载失败", "details": str(e)}), 500
+
+# 抖音指定视频下载
+@app.route('/douyin_specific_download', methods=['POST'])
+async def douyin_specific_download():
+    try:
+        data = request.json
+        share_url = data.get("share_url", "")
+        cookie_str = data.get("cookies", "")
+        msToken = data.get("msToken", "")
+        
+        task_id = str(uuid4())
+        log_func("开始下载抖音指定视频", task_id)
+        socketio.emit("dprogress", {"percent": 0}, room=task_id)
+        
+        is_success = await download_single(share_url, cookie_str, msToken, log=log_func, task_id=task_id)
+        if is_success:
+            socketio.emit("dprogress", {"percent": 100}, room=task_id)
+            socketio.emit("dfinish", {"msg": "指定视频下载完成"}, room=task_id)
+            logger.info("指定视频下载完成")
+            return jsonify({"success": "指定视频下载完成", "task_id": task_id}), 200
+        else:
+            log_func("指定视频下载失败", task_id)
+            logger.error("指定视频下载失败")
+            return jsonify({"error": "指定视频下载失败", "details": "下载任务启动失败"}), 500
+    except Exception as e:
+        log_func(f"下载失败：cookies失效，请清空cookies后点击下载获取新cookies", task_id)
+        logger.error(f"下载失败：cookies失效，请清空cookies后点击下载获取新cookies")
+        return jsonify({"error": "下载失败", "details": "cookies失效，请清空cookies后点击下载获取新cookies"}), 500
 
 @socketio.on('join_download')
 def handle_join_download(data):
-    print(f"收到前端join_download: {data}")
+    logger.info(f"收到前端join_download: {data}")
     task_id = data.get("task_id")
     if task_id:
         join_room(task_id)
         emit("dlog", {"text": f"已加入下载任务房间: {task_id}"})
 
+# 打开下载路径
+@app.route('/open_download_path', methods=['POST'])
+def open_download_path():
+    try:
+        import subprocess
+        import platform
+        
+        # 获取下载路径，默认为当前目录下的media文件夹
+        download_path = os.path.join(os.getcwd(), 'media')
+        
+        # 如果下载文件夹不存在，创建它
+        if not os.path.exists(download_path):
+            os.makedirs(download_path)
+        
+        # 根据操作系统打开文件夹
+        system = platform.system()
+        if system == "Windows":
+            subprocess.run(['explorer', download_path])
+        elif system == "Darwin":  # macOS
+            subprocess.run(['open', download_path])
+        elif system == "Linux":
+            subprocess.run(['xdg-open', download_path])
+        else:
+            return jsonify({"success": False, "error": "不支持的操作系统"}), 400
+            
+        return jsonify({"success": True, "message": "已打开下载路径"}), 200
+        
+    except subprocess.CalledProcessError as e:
+        return jsonify({"success": False, "error": f"打开文件夹失败: {str(e)}"}), 500
+    except Exception as e:
+        return jsonify({"success": False, "error": f"操作失败: {str(e)}"}), 500
+
 # 监听 SIGTERM 信号，优雅关闭 Flask 服务器
 def shutdown_server(signum, frame):
-    print("Shutting down Flask server... 等待所有聊天摘要命名任务完成...")
+    logger.info("Shutting down Flask server... 等待所有聊天摘要命名任务完成...")
     # 等所有后台线程完成
     for t in pending_threads:
         t.join()
-    print("所有聊天摘要命名任务已完成，安全退出。")
+    logger.info("所有聊天摘要命名任务已完成，安全退出。")
     os._exit(0)
 
 signal.signal(signal.SIGTERM, shutdown_server)
@@ -454,10 +527,10 @@ PARENT_PID = os.getppid()
 def monitor_parent():
     while True:
         if not psutil.pid_exists(PARENT_PID):
-            print("Electron 已退出，关闭 Flask 服务器")
+            logger.info("Electron 已退出，关闭 Flask 服务器")
             for t in pending_threads:
                 t.join()
-            print("所有聊天摘要命名任务已完成，安全退出。")
+            logger.info("所有聊天摘要命名任务已完成，安全退出。")
             os._exit(0)
         time.sleep(1)
 
@@ -465,5 +538,17 @@ if __name__ == '__main__':
     process_all_untitled_files(HISTORY_DIR, client, config)   # 自动补偿未命名聊天记录
     monitor_thread = Thread(target=monitor_parent, daemon=True)
     monitor_thread.start()
-    # socketio.run(app, port=6969)
-    app.run(port=6969)
+    
+    # 安全日志对象（兼容 eventlet）
+    logger = logging.getLogger("eventlet")
+    logger.setLevel(logging.INFO)
+    logger.addHandler(logging.StreamHandler())
+
+    # 使用底层的 eventlet 方式启动，显式传 log
+    import eventlet
+    import eventlet.wsgi
+    listener = eventlet.listen(('127.0.0.1', 6969))
+    eventlet.wsgi.server(listener, app, log=logger)
+    
+    # socketio.run(app, port=6969, log_output=True)
+    # 直接启动会导致打包报错

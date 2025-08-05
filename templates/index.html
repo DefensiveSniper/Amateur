@@ -3,11 +3,27 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
   <title>Amateur</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
-  <script src="https://kit.fontawesome.com/c0fb207afc.js" crossorigin="anonymous"></script>
+  <!-- FontAwesome removed to fix loading errors -->
 </head>
 <body>
+  <!-- 设置弹窗 -->
+  <div id="settingsPopup" class="settings-popup" style="display: none;">
+    <div class="settings-popup-content">
+      <div class="settings-popup-header">
+        <h2>设置</h2>
+        <span class="settings-popup-close" id="closeSettingsPopup">&times;</span>
+      </div>
+      <div class="settings-popup-body">
+        <p>设置内容将在稍后添加...</p>
+      </div>
+    </div>
+  </div>
+
   <div id="downloadModal" class="download-modal" style="z-index:9999;display:none;">
     <div>
       <h3>下载进度</h3>
@@ -55,6 +71,22 @@
         </div>
       </div>
     </aside>
+    <!-- 菜单按钮容器 -->
+    <div class="menu-button-container">
+      <!-- 主题切换按钮 -->
+      <div class="theme-toggle-button" id="themeToggleButton">
+        <div class="theme-icon">
+          <img src="/static/images/setting.png" alt="主题切换" />
+        </div>
+      </div>
+      
+      <!-- 菜单设置按钮 -->
+      <div class="menu-settings-button" id="menusettingsButton">
+        <div class="menu-settings-icon">
+          <img src="/static/images/setting.png" alt="设置" />
+        </div>
+      </div>
+    </div>
 
     <!-- 右侧主要内容区 -->
     <main class="main-box">
@@ -64,12 +96,132 @@
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
   <script>
+  // 抖音弹窗控制函数
+  function openDouyinModal() {
+    const modal = document.getElementById('douyinModal');
+    modal.style.display = 'flex';
+    setTimeout(() => {
+      modal.classList.add('show');
+    }, 10);
+  }
+  
+  function closeDouyinModal() {
+    const modal = document.getElementById('douyinModal');
+    modal.classList.remove('show');
+    setTimeout(() => {
+      modal.style.display = 'none';
+    }, 300);
+  }
+  
+  // 点击弹窗外部关闭弹窗
+  document.addEventListener('click', function(e) {
+    const modal = document.getElementById('douyinModal');
+    if (e.target === modal) {
+      closeDouyinModal();
+    }
+  });
+  
+  // ESC键关闭弹窗
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      closeDouyinModal();
+      // 关闭设置弹窗
+      const settingsPopup = document.getElementById('settingsPopup');
+      if (settingsPopup && settingsPopup.style.display === 'flex') {
+        settingsPopup.classList.remove('show');
+        setTimeout(() => {
+          settingsPopup.style.display = 'none';
+        }, 300);
+      }
+    }
+  });
+  
   document.addEventListener('DOMContentLoaded', function() {
     let chatHistory = []; // 存储聊天内容
     let currentFilename = null;    // 当前聊天的历史文件名
     let hasUnsavedChanges = false; // 当前聊天内容是否有未保存更改
     let hasDeletedOriginal = false;// 是否已经删除过原有聊天文件（防止重复删）
+    let isSaving = false; // 防止重复保存的标志
     let douyinFormCache = {}; // 存储视频下载表单
+    
+    // 主题切换功能
+    let currentTheme = 'pink'; // 默认粉色主题
+    const themeToggleButton = document.getElementById('themeToggleButton');
+    
+    function switchTheme() {
+      const body = document.body;
+      const themeButton = document.querySelector('.theme-toggle-button');
+      const themeIcon = themeButton.querySelector('img');
+      
+      if (currentTheme === 'pink') {
+        // 切换到蓝色主题
+        body.classList.remove('pink-theme');
+        body.classList.add('blue-theme');
+        themeButton.style.background = 'linear-gradient(135deg, #4a90e2 0%, #357abd 100%)';
+        themeIcon.src = '/static/images/moon.svg';
+        themeIcon.alt = '月亮';
+        currentTheme = 'blue';
+      } else {
+        // 切换到粉色主题
+        body.classList.remove('blue-theme');
+        body.classList.add('pink-theme');
+        themeButton.style.background = 'linear-gradient(135deg, #ffb3d9 0%, #ff99cc 100%)';
+        themeIcon.src = '/static/images/sun.svg';
+        themeIcon.alt = '太阳';
+        currentTheme = 'pink';
+      }
+    }
+    
+    // 初始化默认主题
+    document.body.classList.add('pink-theme');
+    // 初始化按钮颜色和图标（粉色主题下按钮显示粉色，图标为太阳）
+    if (themeToggleButton) {
+      themeToggleButton.style.background = 'linear-gradient(135deg, #ffb3d9 0%, #ff99cc 100%)';
+      const themeIcon = themeToggleButton.querySelector('img');
+      if (themeIcon) {
+        themeIcon.src = '/static/images/sun.svg';
+        themeIcon.alt = '太阳';
+      }
+    }
+    
+    if (themeToggleButton) {
+      themeToggleButton.addEventListener('click', switchTheme);
+    }
+    
+    // 设置按钮事件处理
+    const menusettingsButton = document.getElementById('menusettingsButton');
+    const settingsPopup = document.getElementById('settingsPopup');
+    const closeSettingsPopup = document.getElementById('closeSettingsPopup');
+    
+    if (menusettingsButton) {
+      menusettingsButton.addEventListener('click', function() {
+        settingsPopup.style.display = 'flex';
+        setTimeout(() => {
+          settingsPopup.classList.add('show');
+        }, 10);
+      });
+    }
+    
+    if (closeSettingsPopup) {
+      closeSettingsPopup.addEventListener('click', function() {
+        settingsPopup.classList.remove('show');
+        setTimeout(() => {
+          settingsPopup.style.display = 'none';
+        }, 300);
+      });
+    }
+    
+    // 点击弹窗外部关闭设置弹窗
+    if (settingsPopup) {
+      settingsPopup.addEventListener('click', function(e) {
+        if (e.target === settingsPopup) {
+          settingsPopup.classList.remove('show');
+          setTimeout(() => {
+            settingsPopup.style.display = 'none';
+          }, 300);
+        }
+      });
+    }
 
       const menuItems = document.querySelectorAll('.menu-item');
       const mainContent = document.querySelector('.main-content');
@@ -84,9 +236,35 @@
                 </div>
                 <div class="cards-wrapper" id="cards-wrapper">
                   <div class="card"><img src="/static/images/ela.png" alt="图片1"></div>
-                  <div class="card" style="max-width: 480px; margin: 0 auto; padding: 30px 30px 20px 30px; flex-direction: column; align-items: stretch;">
-                    <h2 style="margin: 0 auto; text-align: center;">抖音主页视频下载</h2>
-                    <form id="douyin-download-form" style="display: flex; flex-direction: column; gap: 22px;">
+                  <div class="card douyin-card" onclick="openDouyinModal()" style="cursor: pointer;">
+                    <img src="/static/images/tiktok_card.png" alt="抖音视频下载" style="width: 100%; height: 100%; object-fit: cover; border-radius: 16px;">
+                    <div style="position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(255,255,255,0.9); padding: 8px 16px; border-radius: 8px; font-weight: 600; color: #2c3e50;">抖音视频下载</div>
+                  </div>
+                  <div class="card"><img src="/static/images/ela.png" alt="图片3"></div>
+                </div>
+                
+                <!-- 抖音下载弹窗 -->
+                <div id="douyinModal" class="douyin-modal" style="display: none;">
+                  <div class="douyin-modal-content">
+                    <div class="douyin-modal-header">
+                      <h2>抖音视频下载</h2>
+                      <button id="openDownloadPathBtn" class="open-path-btn" onclick="openDownloadPath()" title="打开下载路径">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M3 7v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-6l-2-2H5a2 2 0 0 0-2 2z"></path>
+                        </svg>
+                        打开路径
+                      </button>
+                      <span class="douyin-modal-close" onclick="closeDouyinModal()">&times;</span>
+                    </div>
+                    
+                    <!-- 切换按钮 -->
+                    <div class="douyin-tab-buttons" style="display: flex; border-bottom: 1px solid #e0e0e0; margin-bottom: 20px;">
+                      <button type="button" class="douyin-tab-btn active" data-tab="homepage" style="flex: 1; padding: 12px; border: none; background: none; cursor: pointer; font-weight: 500; border-bottom: 2px solid #007bff;">主页视频</button>
+                      <button type="button" class="douyin-tab-btn" data-tab="specific" style="flex: 1; padding: 12px; border: none; background: none; cursor: pointer; font-weight: 500; border-bottom: 2px solid transparent;">指定视频</button>
+                    </div>
+                    
+                    <!-- 主页视频表单 -->
+                    <form id="douyin-download-form" class="douyin-form-content" data-form="homepage" style="display: flex; flex-direction: column; gap: 22px; padding: 0 20px 20px 20px;">
                       <label>
                         <span style="font-weight:500;">sec_user_id(主页链接中'user/'后的字符串MS4开头)</span>
                         <input type="text" name="sec_user_id" id="sec_user_id" class="input-field" placeholder="请输入sec_user_id" required>
@@ -101,15 +279,35 @@
                       </label>
                       <label>
                         <span style="font-weight:500;">最大下载视频数</span>
-                        <input type="number" name="max_dloads" id="max_dloads" class="input-field" placeholder="请输入最大下载视频数" min="1" required>
+                        <input type="number" name="max_dloads" id="max_dloads" class="input-field" placeholder="请输入最大下载视频数" min="1" required value="10">
                       </label>
                       <div style="display: flex; flex-direction: row; gap: 18px;">
                         <button type="submit" id="start_dload" class="main-btn" style="flex: 7;">开始下载</button>
                         <button type="button" id="saveConfigBtn" class="main-btn" style="flex: 3;">保存</button>
                       </div>
                     </form>
+                    
+                    <!-- 指定视频表单 -->
+                    <form id="douyin-specific-form" class="douyin-form-content" data-form="specific" style="display: none; flex-direction: column; gap: 22px; padding: 0 20px 20px 20px;">
+                      <label>
+                        <span style="font-weight:500;">视频分享链接</span>
+                        <input type="text" name="share_url" id="share_url" class="input-field" placeholder="请输入视频分享链接" required>
+                      </label>
+                      <label>
+                        <span style="font-weight:500;">cookies</span>
+                        <input type="text" name="cookies_specific" id="cookies_specific" class="input-field" placeholder="放空则进行扫码自动填充">
+                      </label>
+                      <label>
+                        <span style="font-weight:500;">msToken</span>
+                        <input type="text" name="msToken_specific" id="msToken_specific" class="input-field" placeholder="放空则进行扫码自动填充">
+                      </label>
+                      <div style="display: flex; flex-direction: row; gap: 18px;">
+                        <button type="submit" id="start_dload_specific" class="main-btn" style="flex: 7;">开始下载</button>
+                        <button type="button" id="saveConfigBtn_specific" class="main-btn" style="flex: 3;">保存</button>
+                      </div>
+                    </form>
+
                   </div>
-                  <div class="card"><img src="/static/images/ela.png" alt="图片3"></div>
                 </div>`,
         chat: `<div class="chat-container">
                 <div class="button-container">
@@ -193,6 +391,12 @@
           cookies: form.cookies.value,
           msToken: form.msToken.value,
           max_dloads: form.max_dloads.value,
+          cookies_specific: form.cookies_specific.value,
+          msToken_specific: form.msToken_specific.value,
+          cookies_following: form.cookies_following.value,
+          msToken_following: form.msToken_following.value,
+          max_following_dloads: form.max_following_dloads.value,
+          share_url: form.share_url.value,
         };
       }
     }
@@ -211,31 +415,82 @@
         mainContent.innerHTML = pages[page];
 
         if (page ==="tools") {
+          // 添加切换按钮功能
+          const tabButtons = document.querySelectorAll('.douyin-tab-btn');
+          const formContents = document.querySelectorAll('.douyin-form-content');
+          
+          // 切换表单显示
+          function switchTab(tabName) {
+            // 更新按钮状态
+            tabButtons.forEach(btn => {
+              btn.classList.remove('active');
+              btn.style.borderBottomColor = 'transparent';
+            });
+            
+            // 隐藏所有表单
+            formContents.forEach(form => {
+              form.style.display = 'none';
+            });
+            
+            // 显示选中的表单
+            const activeBtn = document.querySelector(`[data-tab="${tabName}"]`);
+            const activeForm = document.querySelector(`[data-form="${tabName}"]`);
+            
+            if (activeBtn && activeForm) {
+              activeBtn.classList.add('active');
+              activeBtn.style.borderBottomColor = '#007bff';
+              activeForm.style.display = 'flex';
+            }
+          }
+          
+          // 绑定切换按钮事件
+          tabButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+              const tabName = btn.getAttribute('data-tab');
+              switchTab(tabName);
+            });
+          });
+          
           // 配置管理
           const sec_user_id = document.getElementById("sec_user_id");
           const cookies = document.getElementById("cookies");
           const msToken = document.getElementById("msToken");
           const max_dloads = document.getElementById("max_dloads");
+          
+          // 指定视频表单元素
+          const share_url = document.getElementById("share_url");
+          const cookies_specific = document.getElementById("cookies_specific");
+          const msToken_specific = document.getElementById("msToken_specific");
 
           // 获取视频下载参数
           fetch('/get_config')
           .then(response => response.json())
           .then(data => {
+            // 主页视频表单
             if(data.tools && data.tools.cookies) cookies.value = data.tools.cookies
             if(data.tools && data.tools.msToken) msToken.value = data.tools.msToken
             if(data.tools && data.tools.sec_user_id) sec_user_id.value = data.tools.sec_user_id;
             if(data.tools && data.tools.max_dloads) max_dloads.value = data.tools.max_dloads;
             
+            // 指定视频表单
+            if(data.tools && data.tools.cookies && cookies_specific) cookies_specific.value = data.tools.cookies;
+            if(data.tools && data.tools.msToken && msToken_specific) msToken_specific.value = data.tools.msToken;
+            
             // 再用本地缓存覆盖（如果有缓存）
             if (douyinFormCache) {
               if (douyinFormCache.sec_user_id) document.getElementById('sec_user_id').value = douyinFormCache.sec_user_id;
               if (douyinFormCache.cookies) document.getElementById('cookies').value = douyinFormCache.cookies;
+              if(douyinFormCache.cookies_specific) document.getElementById('cookies_specific').value = douyinFormCache.cookies_specific;
               if (douyinFormCache.msToken) document.getElementById('msToken').value = douyinFormCache.msToken;
+              if(douyinFormCache.msToken_specific) document.getElementById('msToken_specific').value = douyinFormCache.msToken_specific;
               if (douyinFormCache.max_dloads) document.getElementById('max_dloads').value = douyinFormCache.max_dloads;
+              if(douyinFormCache.share_url) document.getElementById('share_url').value = douyinFormCache.share_url;
             }
 
             // ----------- 监听表单输入，实时写入缓存 -----------
-            ['sec_user_id', 'cookies', 'msToken', 'max_dloads'].forEach(id => {
+            ['sec_user_id', 'cookies', 'msToken', 'cookies_specific', 'msToken_specific',
+               'cookies_following', 'msToken_following', 'max_dloads', 'max_following_dloads', 'share_url'
+            ].forEach(id => {
               const el = document.getElementById(id);
               if (el) {
                 el.addEventListener('input', () => {
@@ -246,12 +501,12 @@
           });
 
           // 定义表单和保存按钮
-          const form = document.getElementById("douyin-download-form");
+          const userForm = document.getElementById("douyin-download-form");
           const saveConfigBtn = document.getElementById("saveConfigBtn");
           
-          if (saveConfigBtn && form) {
+          if (saveConfigBtn && userForm) {
             saveConfigBtn.addEventListener("click", async () => {
-              const formData = new FormData(form);
+              const formData = new FormData(userForm);
               const data = Object.fromEntries(formData.entries());
               // 保存字段
               try {
@@ -272,10 +527,10 @@
             });
           }
 
-          if (form) {
-            form.addEventListener("submit", async (e) => {
+          if (userForm) {
+            userForm.addEventListener("submit", async (e) => {
               e.preventDefault();
-              const formData = new FormData(form);
+              const formData = new FormData(userForm);
               const data = Object.fromEntries(formData.entries());
               if(data.cookies == "" || data.msToken == "") {
                 showToast("请先进行扫码登录");
@@ -316,7 +571,7 @@
               }
               else{
                 try {
-                  const response = await fetch("/douyin_download", {
+                  const response = await fetch("/douyin_user_download", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify(data)
@@ -327,6 +582,114 @@
                     listenDownloadProgress(result.task_id); // 开始监听日志
                   } else {
                     showToast(result.error + result.details || "下载任务启动失败");
+                    hideDownloadModal();
+                  }
+                } catch (error) {
+                  showToast("下载请求失败，请检查控制台日志。");
+                  hideDownloadModal();
+                }
+              }
+            });
+          }
+          
+          // 指定视频表单处理
+          const specificForm = document.getElementById('douyin-specific-form');
+          const saveConfigBtnSpecific = document.getElementById("saveConfigBtn_specific");
+          
+          if (saveConfigBtnSpecific && specificForm) {
+            saveConfigBtnSpecific.addEventListener("click", async () => {
+              const formData = new FormData(specificForm);
+              const data = Object.fromEntries(formData.entries());
+              // 保存字段
+              try {
+                const response = await fetch("/save_config", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify(data)
+                });
+                const result = await response.json();
+                if (response.ok) {
+                  showToast("配置已保存！")
+                } else {
+                  showToast(result.error || "保存失败", 2500);
+                }
+              } catch (e) {
+                showToast("保存请求失败", 2500);
+              }
+            });
+          }
+          
+          if (specificForm) {
+            specificForm.addEventListener("submit", async (e) => {
+              e.preventDefault();
+              const formData = new FormData(specificForm);
+              const data = Object.fromEntries(formData.entries());
+              
+              // 检查必填字段
+              if (!data.share_url) {
+                showToast("请输入视频分享链接");
+                return;
+              }
+              
+              if(data.cookies_specific == "" || data.msToken_specific == "") {
+                showToast("请先进行扫码登录");
+                try {
+                  const loginData = {
+                    cookies: data.cookies_specific,
+                    msToken: data.msToken_specific
+                  };
+                  const response = await fetch("/douyin_login",{
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(loginData)
+                  });
+                  showToast("登录中，请稍后...");
+                  const result = await response.json();
+                  console.log('登录响应数据:', result); // 调试信息
+                  if (result.success) {
+                    showToast("登录成功！");
+                    // 把获取的cookie和msToken填入表单
+                    console.log('检查tools数据:', result.tools); // 调试信息
+                    if (result.tools && result.tools.cookies) {
+                      console.log('填入cookies:', result.tools.cookies); // 调试信息
+                      document.getElementById('cookies_specific').value = result.tools.cookies;
+                      // 更新缓存
+                      douyinFormCache.cookies_specific = result.tools.cookies;
+                    }
+                    if (result.tools && result.tools.msToken) {
+                      console.log('填入msToken:', result.tools.msToken); // 调试信息
+                      document.getElementById('msToken_specific').value = result.tools.msToken;
+                      // 更新缓存
+                      douyinFormCache.msToken_specific = result.tools.msToken;
+                    }
+                    // 自动保存配置
+                    saveConfigBtnSpecific.click();
+                  } else {
+                    showToast(result.error || "登录失败");
+                  }
+                } catch (error) {
+                  console.error('登录请求失败:', error);
+                  showToast("登录请求失败，请检查网络连接");
+                }
+              }
+              else{
+                try {
+                  const requestData = {
+                    share_url: data.share_url,
+                    cookies: data.cookies_specific,
+                    msToken: data.msToken_specific
+                  };
+                  const response = await fetch("/douyin_specific_download", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(requestData)
+                  });
+                  const result = await response.json();
+                  if (result.success && result.task_id) {
+                    showDownloadModal(); // 显示弹窗
+                    listenDownloadProgress(result.task_id); // 开始监听日志
+                  } else {
+                    showToast(result.error + (result.details || "") || "下载任务启动失败");
                     hideDownloadModal();
                   }
                 } catch (error) {
@@ -411,12 +774,20 @@
                           titleDiv.style.paddingRight = "10px";
                           titleDiv.addEventListener("click", async () => {
                             try {
-                              if (hasUnsavedChanges && chatHistory.length > 0) {
-                                await fetch("/save_history", {
-                                  method: "POST",
-                                  headers: { "Content-Type": "application/json" },
-                                  body: JSON.stringify(chatHistory)
-                                });
+                              if (hasUnsavedChanges && chatHistory.length > 0 && !isSaving) {
+                                isSaving = true;
+                                try {
+                                  await fetch("/save_history", {
+                                    method: "POST",
+                                    headers: { "Content-Type": "application/json" },
+                                    body: JSON.stringify({
+                                      chat: chatHistory,
+                                      filename: currentFilename
+                                    })
+                                  });
+                                } finally {
+                                  isSaving = false;
+                                }
                               }
 
                               const res = await fetch(`/load_history?filename=${encodeURIComponent(item.filename)}`);
@@ -604,7 +975,10 @@
       if (event.key === "Enter") {
         event.preventDefault(); // 防止换行
         sendMessage();
-        chatBox.scrollTop = chatBox.scrollHeight;  // 保持滚动条在底部
+        const chatBox = document.getElementById('chat-box');
+        if (chatBox) {
+          chatBox.scrollTop = chatBox.scrollHeight;  // 保持滚动条在底部
+        }
         document.getElementById('userInput')?.focus();  // 聚焦输入框
       }
     }
@@ -637,45 +1011,92 @@
   
       // 记录并更新 UI
       chatHistory.push({ type: "user", text: message });
-      chatBox.innerHTML += `<div class="user-message">用户：${message}</div>`;
+      chatBox.innerHTML += `<div class="user-message">${message}</div>`;
       inputField.value = '';
+      chatBox.scrollTop = chatBox.scrollHeight; // 保持滚动条在底部
 
       // 检查是否有未保存的更改
       hasUnsavedChanges = true;
   
       try {
-          const response = await fetch('http://127.0.0.1:6969/chat', {
+          // 创建 AI 回复的 div
+          const aiMessageDiv = document.createElement('div');
+          aiMessageDiv.classList.add('ai-message');
+          chatBox.appendChild(aiMessageDiv);
+          
+          const response = await fetch('/chat', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ message: summarizedMessage })  // 发送带有对话历史的消息
           });
   
+          if (!response.ok) {
+              throw new Error(`HTTP error! status: ${response.status}`);
+          }
+
           const reader = response.body.getReader();
           let aiMessage = "";
           let decoder = new TextDecoder();
-  
-          // 创建 AI 回复的 div
-          const aiMessageDiv = document.createElement('div');
-          aiMessageDiv.classList.add('ai-message');
-          chatBox.appendChild(aiMessageDiv);
+          let displayedMessage = "";
+          let isTyping = false;
 
-          let firstChunk = true;
+          // 添加打字机效果的样式和光标
+          aiMessageDiv.style.opacity = '0';
+          aiMessageDiv.style.transform = 'translateY(10px)';
+          aiMessageDiv.classList.add('typing');
+          
+          setTimeout(() => {
+              aiMessageDiv.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+              aiMessageDiv.style.opacity = '1';
+              aiMessageDiv.style.transform = 'translateY(0)';
+          }, 50);
 
+          // 打字机效果函数
+          const typeWriter = () => {
+              if (displayedMessage.length < aiMessage.length) {
+                  isTyping = true;
+                  displayedMessage = aiMessage.substring(0, displayedMessage.length + 1);
+                  let cleanDisplayMessage = displayedMessage.replace(/^\[AI\]:\s*/, '');
+                  aiMessageDiv.innerHTML = cleanDisplayMessage + '<span class="typing-cursor">|</span>';
+                  chatBox.scrollTop = chatBox.scrollHeight;
+                  setTimeout(typeWriter, 30); // 调整打字速度
+              } else {
+                  isTyping = false;
+                  let cleanDisplayMessage = displayedMessage.replace(/^\[AI\]:\s*/, '');
+                  aiMessageDiv.innerHTML = cleanDisplayMessage;
+                  aiMessageDiv.classList.remove('typing');
+              }
+          };
+
+          let buffer = '';
           while (true) {
               const { done, value } = await reader.read();
               if (done) break;
 
               const chunk = decoder.decode(value, { stream: true });
-              aiMessage += chunk;
-
-              if (firstChunk) {
-                  aiMessageDiv.innerText = aiMessage;
-                  firstChunk = false;
-              } else {
-                  aiMessageDiv.innerText = aiMessage;
+              buffer += chunk;
+              
+              // 处理Server-Sent Events格式的数据
+              const lines = buffer.split('\n');
+              buffer = lines.pop() || ''; // 保留不完整的行
+              
+              for (const line of lines) {
+                  if (line.startsWith('data: ')) {
+                      const text = line.substring(6); // 移除'data: '前缀
+                      if (text) {
+                          aiMessage += text;
+                          // 如果当前没有在打字，启动打字机效果
+                          if (!isTyping) {
+                              typeWriter();
+                          }
+                      }
+                  }
               }
-
-              chatBox.scrollTop = chatBox.scrollHeight; // 保持滚动条在底部
+          }
+          
+          // 确保最后的内容完全显示
+          if (displayedMessage.length < aiMessage.length) {
+              typeWriter();
           }
   
           // 存储 AI 回复到历史记录
@@ -683,7 +1104,8 @@
           chatBox.scrollTop = chatBox.scrollHeight; // 滚到底
   
       } catch (error) {
-          chatBox.innerHTML += `<div class="ai-message error">服务器错误，请检查 API 设置或网络连接。</div>`;
+          console.error('Chat error:', error);
+          chatBox.innerHTML += `<div class="ai-message error">服务器错误，请检查 API 设置或网络连接。错误详情: ${error.message}</div>`;
       }
       inputField.focus();  // 聚焦输入框
     }
@@ -697,7 +1119,9 @@
         if (entry.type === "user") {
           chatBox.innerHTML += `<div class="user-message">${entry.text}</div>`;
         } else {
-          chatBox.innerHTML += `<div class="ai-message">${entry.text}</div>`;
+          // 去除[Assistant]:前缀
+          let cleanText = entry.text.replace(/^\[Assistant\]:\s*/, '');
+          chatBox.innerHTML += `<div class="ai-message">${cleanText}</div>`;
         }
       });
       chatBox.scrollTop = chatBox.scrollHeight; // 保持滚动条在底部
@@ -761,9 +1185,11 @@
     function saveChatHistory() {
       if (!hasUnsavedChanges) return;
       if (!chatHistory || chatHistory.length === 0) return;
+      if (isSaving) return; // 如果正在保存，直接返回
       const hasMeaningfulMessage = chatHistory.some(item => item.text && item.text.trim() !== "");
       if (!hasMeaningfulMessage) return;
 
+      isSaving = true; // 设置保存标志
       fetch("/save_history", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -777,6 +1203,9 @@
         if (data.filename) currentFilename = data.filename; // 后端返回时刷新
         hasUnsavedChanges = false;
         hasDeletedOriginal = false;
+      })
+      .finally(() => {
+        isSaving = false; // 无论成功失败都重置保存标志
       });
     }
   
@@ -795,11 +1224,21 @@
 
     window.addEventListener("beforeunload", function (event) {
       // 自动保存聊天记录
-      if (chatHistory.length > 0) {
-        navigator.sendBeacon("/save_history", new Blob(
-          [JSON.stringify(chatHistory)], 
-          { type: 'application/json' }
-        ));
+      if (chatHistory.length > 0 && hasUnsavedChanges && !isSaving) {
+        isSaving = true; // 设置保存标志防止重复
+        // 使用同步fetch而不是sendBeacon，确保数据格式正确
+        const data = {
+          chat: chatHistory,
+          filename: currentFilename
+        };
+        
+        // 使用fetch发送请求
+        fetch("/save_history", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data),
+          keepalive: true  // 确保页面关闭时请求能完成
+        }).catch(err => console.log('Save failed:', err));
       }
     });
   }); // 闭合 DOMContentLoaded 事件监听器
@@ -838,6 +1277,28 @@
           bar.innerText = "100%";
           logBox.innerHTML += '<b>全部下载完成</b><br>';
       });
+  }
+
+  // 打开下载路径
+  function openDownloadPath() {
+    fetch('/open_download_path', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        showToast('已打开下载路径');
+      } else {
+        showToast('打开路径失败: ' + (data.error || '未知错误'));
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      showToast('打开路径失败');
+    });
   }
 
   // 自定义弹窗

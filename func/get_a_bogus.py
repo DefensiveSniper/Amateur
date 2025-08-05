@@ -6,9 +6,19 @@
 
 import random
 import execjs
+import os
+import sys
 from playwright.async_api import Page
 
-douyin_sign_obj = execjs.compile(open('libs/douyin.js', encoding='utf-8-sig').read())
+# douyin_sign_obj = execjs.compile(open('libs/douyin.js', encoding='utf-8-sig').read())
+def resource_path(relative_path):
+    # PyInstaller 兼容处理：开发环境时返回原路径；打包后走 _MEIPASS 虚拟路径
+    if hasattr(sys, '_MEIPASS'):
+        return os.path.join(sys._MEIPASS, relative_path)
+    return relative_path
+
+douyin_js_path = resource_path("libs/douyin.js")
+douyin_sign_obj = execjs.compile(open(douyin_js_path, encoding='utf-8-sig').read())
 
 def get_web_id():
     """
