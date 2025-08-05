@@ -22,7 +22,7 @@ Amateur 是一个实验性应用，旨在探索 Electron + Flask + HTML/CSS/JS �
    ```
 3. 启动后端（Flask）：
    ```sh
-   python main.py
+   python flask_server.py
    ```
 4. 启动 Electron 应用：
    ```sh
