@@ -1,0 +1,68 @@
+/* 引入样式 */
+/* @import url('../styles.css'); */
+@import url('./styles_main.css');
+@import url('./theme.css');
+@import url('./responsive.css');
+@import url('./douyin_dl.css');
+@import url('./cards.css');
+@import url('./chat_page.css');
+@import url('./home_page.css');
+@import url('./right_content.css');
+
+/* 统一全局滚动条样式（应用于整个页面）*/
+html, body, *, div, section, main, .main-content, .container {
+  /* Firefox 全局滚动条 */
+  scrollbar-width: thin !important;
+  scrollbar-color: rgba(255, 102, 170, 0.75) rgba(0, 0, 0, 0.06) !important;
+}
+
+/* WebKit 全局滚动条 - 高优先级覆盖 */
+html::-webkit-scrollbar, body::-webkit-scrollbar, *::-webkit-scrollbar, 
+div::-webkit-scrollbar, section::-webkit-scrollbar, main::-webkit-scrollbar {
+  width: 10px !important;
+  height: 10px !important;
+}
+html::-webkit-scrollbar-track, body::-webkit-scrollbar-track, *::-webkit-scrollbar-track,
+div::-webkit-scrollbar-track, section::-webkit-scrollbar-track, main::-webkit-scrollbar-track {
+  background: linear-gradient(180deg, #f7f7f7 0%, #efefef 100%) !important;
+  border-radius: 8px !important;
+}
+html::-webkit-scrollbar-thumb, body::-webkit-scrollbar-thumb, *::-webkit-scrollbar-thumb,
+div::-webkit-scrollbar-thumb, section::-webkit-scrollbar-thumb, main::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #ff99cc 0%, #ff66aa 100%) !important;
+  border-radius: 8px !important;
+  border: 2px solid #f0f0f0 !important;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.35) !important;
+}
+html::-webkit-scrollbar-thumb:hover, body::-webkit-scrollbar-thumb:hover, *::-webkit-scrollbar-thumb:hover,
+div::-webkit-scrollbar-thumb:hover, section::-webkit-scrollbar-thumb:hover, main::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #ff88c4 0%, #ff559d 100%) !important;
+}
+html::-webkit-scrollbar-corner, body::-webkit-scrollbar-corner, *::-webkit-scrollbar-corner,
+div::-webkit-scrollbar-corner, section::-webkit-scrollbar-corner, main::-webkit-scrollbar-corner {
+  background: transparent !important;
+}
+
+/* 覆盖原有的 chat-box 和 iframe-content 滚动条样式 */
+.chat-box, .iframe-content, #downloadLog {
+  scrollbar-width: thin !important;
+  scrollbar-color: rgba(255, 102, 170, 0.75) rgba(0, 0, 0, 0.06) !important;
+}
+.chat-box::-webkit-scrollbar, .iframe-content::-webkit-scrollbar, #downloadLog::-webkit-scrollbar {
+  width: 10px !important;
+  height: 10px !important;
+  display: block !important;
+}
+.chat-box::-webkit-scrollbar-track, .iframe-content::-webkit-scrollbar-track, #downloadLog::-webkit-scrollbar-track {
+  background: linear-gradient(180deg, #f7f7f7 0%, #efefef 100%) !important;
+  border-radius: 8px !important;
+}
+.chat-box::-webkit-scrollbar-thumb, .iframe-content::-webkit-scrollbar-thumb, #downloadLog::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #ff99cc 0%, #ff66aa 100%) !important;
+  border-radius: 8px !important;
+  border: 2px solid #f0f0f0 !important;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.35) !important;
+}
+.chat-box::-webkit-scrollbar-thumb:hover, .iframe-content::-webkit-scrollbar-thumb:hover, #downloadLog::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #ff88c4 0%, #ff559d 100%) !important;
+}

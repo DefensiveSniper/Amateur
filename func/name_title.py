@@ -11,7 +11,7 @@ def generate_summary_name(chat, client, config):
         summary_prompt = (
             "请为以下聊天生成一个简洁的文件名（不超过20个字符，不含标点符号，概括聊天内容，不要加引号）：\n\n"
         )
-        formatted = "\n".join(f"[{'用户' if msg['type']=='user' else 'AI'}]：{msg['text']}" for msg in chat[-10:])
+        formatted = "\n".join(f"[{'用户' if msg['type']=='user' else 'AI'}]：{msg['text']}" for msg in chat[:10])
         message = summary_prompt + formatted
 
         response = client.chat.completions.create(

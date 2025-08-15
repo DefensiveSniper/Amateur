@@ -1,0 +1,434 @@
+/* ==================== 主题样式定义 ==================== */
+
+/* 粉色主题 */
+body.pink-theme, html.pink-theme {
+  background: linear-gradient(135deg, #FFB6C1 0%, #FFC0CB 100%) !important;
+}
+
+.pink-theme .container {
+  background: linear-gradient(135deg, #FFB6C1 0%, #FFC0CB 100%);
+}
+
+.pink-theme .main-btn {
+  background: linear-gradient(135deg, #ffb3d9, #ff99cc) !important;
+}
+
+.pink-theme .button-item {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(248, 250, 252, 0.8)) !important;
+}
+
+.pink-theme .button-item:hover {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 1), rgba(255, 240, 245, 0.9)) !important;
+  box-shadow: 0 4px 20px rgba(255, 153, 204, 0.3) !important;
+}
+
+.pink-theme .button-icon {
+  background: rgba(255, 153, 204, 0.1) !important;
+}
+
+.pink-theme .button-item:hover .button-icon {
+  background: rgba(255, 153, 204, 0.2) !important;
+}
+
+.pink-theme .input-field {
+  border: 2px solid #ffb3d9 !important;
+  background: #fff0f5 !important;
+}
+
+.pink-theme .input-field:focus {
+  border-color: #ff99cc !important;
+  box-shadow: 0 0 0 3px rgba(255, 153, 204, 0.2) !important;
+}
+
+.pink-theme .modal {
+  background: linear-gradient(135deg, rgba(255, 240, 245, 0.95), rgba(255, 228, 240, 0.9)) !important;
+  border: 1px solid rgba(255, 192, 203, 0.3) !important;
+  box-shadow: 0 8px 32px rgba(255, 153, 204, 0.2) !important;
+}
+
+.pink-theme .modal h3 {
+  color: #e91e63 !important;
+}
+
+.pink-theme .modal button {
+  background: linear-gradient(90deg, #ffb3d9 0%, #ff99cc 100%) !important;
+  box-shadow: 0 3px 14px 0 rgba(255, 153, 204, 0.2) !important;
+}
+
+.pink-theme .modal button:hover {
+  background: linear-gradient(90deg, #ff99cc 0%, #ff80b3 100%) !important;
+  box-shadow: 0 5px 20px 0 rgba(255, 153, 204, 0.3) !important;
+}
+
+.pink-theme .douyin-modal-content {
+  background: linear-gradient(135deg, rgba(255, 240, 245, 0.95), rgba(255, 228, 240, 0.9)) !important;
+  border: 1px solid rgba(255, 192, 203, 0.3) !important;
+  box-shadow: 0 8px 32px rgba(255, 153, 204, 0.2) !important;
+}
+
+.pink-theme .douyin-modal-header h2 {
+  color: #ff99cc !important;
+}
+
+.pink-theme .douyin-modal-header::after {
+  background: linear-gradient(90deg, transparent, #ffb3d9, transparent) !important;
+}
+
+.pink-theme .settings-popup-content {
+  background: linear-gradient(135deg, rgba(255, 240, 245, 0.95), rgba(255, 228, 240, 0.9)) !important;
+  border: 1px solid rgba(255, 192, 203, 0.3) !important;
+  box-shadow: 0 8px 32px rgba(255, 153, 204, 0.2) !important;
+}
+
+.pink-theme .settings-popup-content h2 {
+  color: #e91e63 !important;
+}
+
+.pink-theme .config-input {
+  border: 2px solid rgba(255, 153, 204, 0.2) !important;
+  background: rgba(255, 255, 255, 0.9) !important;
+}
+
+.pink-theme .config-input:focus {
+  border-color: #ff99cc !important;
+  box-shadow: 0 0 0 3px rgba(255, 153, 204, 0.1) !important;
+}
+
+.pink-theme .menu-settings-button {
+  background: linear-gradient(135deg, #ffb3d9 0%, #ff99cc 100%) !important;
+  box-shadow: 0 4px 15px rgba(255, 153, 204, 0.3) !important;
+}
+
+.pink-theme .menu-settings-button:hover {
+  background: linear-gradient(135deg, #ff99cc 0%, #ff80b3 100%) !important;
+  box-shadow: 0 6px 20px rgba(255, 153, 204, 0.4) !important;
+}
+
+.pink-theme .settings-popup-header {
+  background: linear-gradient(135deg, #ffb3d9 0%, #ff99cc 100%) !important;
+}
+
+.pink-theme .main-tail {
+  background: rgba(255, 240, 245, 0.8) !important;
+  border: 1px solid rgba(255, 192, 203, 0.3) !important;
+}
+
+.pink-theme .main-tail a {
+  color: #e91e63 !important;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(255, 240, 248, 0.8)) !important;
+  border: 1px solid rgba(255, 153, 204, 0.2) !important;
+  box-shadow: 0 4px 16px rgba(255, 153, 204, 0.1) !important;
+}
+
+.pink-theme .main-tail a:hover {
+  color: #ff80b3 !important;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(255, 237, 247, 0.9)) !important;
+  box-shadow: 0 8px 24px rgba(255, 153, 204, 0.2) !important;
+}
+
+.pink-theme .main-tail a::before {
+  background: linear-gradient(90deg, transparent, rgba(255, 153, 204, 0.2), transparent) !important;
+}
+
+.pink-theme .main-tail p {
+  color: #d81b60 !important;
+}
+
+/* 蓝色主题 */
+body.blue-theme, html.blue-theme {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+}
+
+.blue-theme .container {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.blue-theme .main-btn {
+  background: linear-gradient(135deg, #4a90e2, #357abd) !important;
+}
+
+.blue-theme .button-item {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(240, 248, 255, 0.8)) !important;
+}
+
+.blue-theme .button-item:hover {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 1), rgba(240, 248, 255, 0.9)) !important;
+  box-shadow: 0 4px 20px rgba(74, 144, 226, 0.3) !important;
+}
+
+.blue-theme .button-icon {
+  background: rgba(74, 144, 226, 0.1) !important;
+}
+
+.blue-theme .button-item:hover .button-icon {
+  background: rgba(74, 144, 226, 0.2) !important;
+}
+
+.blue-theme .input-field {
+  border: 2px solid #4a90e2 !important;
+  background: #f0f8ff !important;
+}
+
+.blue-theme .input-field:focus {
+  border-color: #357abd !important;
+  box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.2) !important;
+}
+
+.blue-theme .modal {
+  background: linear-gradient(135deg, rgba(240, 248, 255, 0.95), rgba(230, 240, 255, 0.9)) !important;
+  border: 1px solid rgba(74, 144, 226, 0.3) !important;
+  box-shadow: 0 8px 32px rgba(74, 144, 226, 0.2) !important;
+}
+
+.blue-theme .modal h3 {
+  color: #277ef3 !important;
+}
+
+.blue-theme .modal button {
+  background: linear-gradient(90deg, #4a90e2 0%, #357abd 100%) !important;
+  box-shadow: 0 3px 14px 0 rgba(74, 144, 226, 0.2) !important;
+}
+
+.blue-theme .modal button:hover {
+  background: linear-gradient(90deg, #357abd 0%, #2968a3 100%) !important;
+  box-shadow: 0 5px 20px 0 rgba(74, 144, 226, 0.3) !important;
+}
+
+.blue-theme .douyin-modal-content {
+  background: linear-gradient(135deg, rgba(240, 248, 255, 0.95), rgba(230, 240, 255, 0.9)) !important;
+  border: 1px solid rgba(74, 144, 226, 0.3) !important;
+  box-shadow: 0 8px 32px rgba(74, 144, 226, 0.2) !important;
+}
+
+.blue-theme .douyin-modal-header h2 {
+  color: #4a90e2 !important;
+}
+
+.blue-theme .douyin-modal-header::after {
+  background: linear-gradient(90deg, transparent, #4a90e2, transparent) !important;
+}
+
+.blue-theme .open-path-btn {
+  background: linear-gradient(135deg, #4a90e2 0%, #357abd 100%) !important;
+  box-shadow: 0 2px 8px rgba(74, 144, 226, 0.3) !important;
+}
+
+.blue-theme .open-path-btn:hover {
+  background: linear-gradient(135deg, #357abd 0%, #2968a3 100%) !important;
+  box-shadow: 0 4px 12px rgba(74, 144, 226, 0.4) !important;
+}
+
+.blue-theme .settings-popup-content {
+  background: linear-gradient(135deg, rgba(240, 248, 255, 0.95), rgba(230, 240, 255, 0.9)) !important;
+  border: 1px solid rgba(74, 144, 226, 0.3) !important;
+  box-shadow: 0 8px 32px rgba(74, 144, 226, 0.2) !important;
+}
+
+.blue-theme .settings-popup-header {
+  background: linear-gradient(135deg, #4a90e2 0%, #357abd 100%) !important;
+}
+
+.blue-theme .settings-popup-content h2 {
+  color: #1a365d !important;
+}
+
+.blue-theme .config-input {
+  border: 2px solid rgba(74, 144, 226, 0.2) !important;
+  background: rgba(240, 248, 255, 0.9) !important;
+}
+
+body.blue-theme .config-input:focus {
+  border-color: #4a90e2 !important;
+  box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.1) !important;
+}
+
+/* 配置模态框中的select和input元素主题样式 */
+body.pink-theme #provider,
+body.pink-theme #model,
+body.pink-theme #apiKey {
+  border: 2px solid #ffb3d9 !important;
+  background: #fff0f5 !important;
+  color: #333 !important;
+}
+
+body.pink-theme #provider:focus,
+body.pink-theme #model:focus,
+body.pink-theme #apiKey:focus {
+  border-color: #ff99cc !important;
+  box-shadow: 0 0 0 3px rgba(255, 153, 204, 0.2) !important;
+  outline: none !important;
+}
+
+body.blue-theme #provider,
+body.blue-theme #model,
+body.blue-theme #apiKey {
+  border: 2px solid #4a90e2 !important;
+  background: #f0f8ff !important;
+  color: #333 !important;
+}
+
+body.blue-theme #provider:focus,
+body.blue-theme #model:focus,
+body.blue-theme #apiKey:focus {
+  border-color: #357abd !important;
+  box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.2) !important;
+  outline: none !important;
+}
+
+.blue-theme .menu-settings-button {
+  background: linear-gradient(135deg, #4a90e2 0%, #357abd 100%) !important;
+  box-shadow: 0 4px 15px rgba(74, 144, 226, 0.3) !important;
+}
+
+.blue-theme .menu-settings-button:hover {
+  background: linear-gradient(135deg, #357abd 0%, #2968a3 100%) !important;
+  box-shadow: 0 6px 20px rgba(74, 144, 226, 0.4) !important;
+}
+
+.blue-theme .main-tail {
+  background: rgba(240, 248, 255, 0.8) !important;
+  border: 1px solid rgba(74, 144, 226, 0.3) !important;
+}
+
+.blue-theme .main-tail a {
+  color: #277ef3 !important;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(240, 248, 255, 0.8)) !important;
+  border: 1px solid rgba(74, 144, 226, 0.2) !important;
+  box-shadow: 0 4px 16px rgba(74, 144, 226, 0.1) !important;
+}
+
+.blue-theme .main-tail a:hover {
+  color: #1976d2 !important;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(235, 245, 255, 0.9)) !important;
+  box-shadow: 0 8px 24px rgba(74, 144, 226, 0.2) !important;
+}
+
+.blue-theme .main-tail a::before {
+  background: linear-gradient(90deg, transparent, rgba(74, 144, 226, 0.2), transparent) !important;
+}
+
+.blue-theme .main-tail p {
+  color: #1976d2 !important;
+}
+
+/* 用户消息框主题样式 */
+/* 粉色主题下的用户消息框 */
+body.pink-theme .user-message {
+  background: linear-gradient(135deg, #ffb3d9, #ff99cc) !important;
+  color: white !important;
+  box-shadow: 0 4px 16px rgba(255, 153, 204, 0.3) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
+
+body.pink-theme .user-message::before {
+  border-top-color: #ff99cc !important;
+  border-left-color: #ff99cc !important;
+}
+
+/* 蓝色主题下的用户消息框 */
+body.blue-theme .user-message {
+  background: linear-gradient(135deg, #4a90e2, #357abd) !important;
+  color: white !important;
+  box-shadow: 0 4px 16px rgba(74, 144, 226, 0.3) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
+
+body.blue-theme .user-message::before {
+  border-top-color: #357abd !important;
+  border-left-color: #357abd !important;
+}
+
+/* 主题适配：粉色 / 蓝色 */
+body.pink-theme .ai-message blockquote.markdown-quote { border-left-color: #ff99cc44; background: #ff99cc10; }
+body.blue-theme .ai-message blockquote.markdown-quote { border-left-color: #4a90e244; background: #4a90e210; }
+
+body.pink-theme .ai-message pre.code-block { box-shadow: 0 6px 18px rgba(255, 153, 204, 0.18); }
+body.blue-theme .ai-message pre.code-block { box-shadow: 0 6px 18px rgba(58, 130, 247, 0.18); }
+
+/* 代码块复制按钮主题色 */
+body.pink-theme .ai-message .copy-btn { border-color: #ff99cc88; }
+body.pink-theme .ai-message .copy-btn:hover { background: #fff; box-shadow: 0 2px 8px rgba(255, 153, 204, 0.25); }
+body.blue-theme .ai-message .copy-btn { border-color: #4a90e288; }
+body.blue-theme .ai-message .copy-btn:hover { background: #fff; box-shadow: 0 2px 8px rgba(58, 130, 247, 0.25); }
+
+/* ==================== 主题联动的滚动条样式 ==================== */
+/* 粉色主题（默认） */
+body.pink-theme, html.pink-theme {
+  /* Firefox 全局滚动条颜色（thumb / track）*/
+  scrollbar-color: rgba(255, 102, 170, 0.75) rgba(0, 0, 0, 0.06) !important;
+}
+body.pink-theme *, html.pink-theme * {
+  scrollbar-color: rgba(255, 102, 170, 0.75) rgba(0, 0, 0, 0.06) !important;
+}
+/* WebKit 主题色：仅覆盖拇指颜色即可 */
+body.pink-theme ::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #ff99cc 0%, #ff66aa 100%) !important;
+}
+body.pink-theme ::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #ff88c4 0%, #ff559d 100%) !important;
+}
+
+/* 蓝色主题 */
+body.blue-theme, html.blue-theme {
+  /* Firefox 全局滚动条颜色（thumb / track）*/
+  scrollbar-color: rgba(58, 130, 247, 0.75) rgba(0, 0, 0, 0.06) !important; /* #3a82f7 半透明 */
+}
+body.blue-theme *, html.blue-theme * {
+  scrollbar-color: rgba(58, 130, 247, 0.75) rgba(0, 0, 0, 0.06) !important;
+}
+/* WebKit 主题色：仅覆盖拇指颜色即可 */
+body.blue-theme ::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #4a90e2 0%, #357abd 100%) !important;
+}
+body.blue-theme ::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #3f83d6 0%, #2d6db1 100%) !important;
+}
+
+/* ==================== 聊天输入框和按钮的主题样式 ==================== */
+/* 粉色主题（默认）： 保持现有的粉色风格 */
+body.pink-theme .chat-input input {
+  border-color: rgba(255, 153, 204, 0.2) !important;
+}
+body.pink-theme .chat-input input:focus {
+  border-color: #ff99cc !important;
+  box-shadow: 0 0 0 3px rgba(255, 153, 204, 0.1) !important;
+}
+body.pink-theme .chat-input button {
+  background: linear-gradient(135deg, #ffb3d9, #ff99cc) !important;
+  box-shadow: 0 4px 16px rgba(255, 153, 204, 0.3) !important;
+}
+body.pink-theme .chat-input button:hover {
+  background: linear-gradient(135deg, #ff99cc, #ff80b3) !important;
+  box-shadow: 0 8px 24px rgba(255, 153, 204, 0.4) !important;
+}
+
+/* 蓝色主题：将输入框和按钮改为蓝色风格 */
+body.blue-theme .chat-input input {
+  border-color: rgba(58, 130, 247, 0.2) !important;
+}
+body.blue-theme .chat-input input:focus {
+  border-color: #3a82f7 !important;
+  box-shadow: 0 0 0 3px rgba(58, 130, 247, 0.1) !important;
+}
+body.blue-theme .chat-input button {
+  background: linear-gradient(135deg, #5ba0f2, #3a82f7) !important;
+  box-shadow: 0 4px 16px rgba(58, 130, 247, 0.3) !important;
+}
+body.blue-theme .chat-input button:hover {
+  background: linear-gradient(135deg, #4a90e2, #357abd) !important;
+  box-shadow: 0 8px 24px rgba(58, 130, 247, 0.4) !important;
+}
+
+/* 主题适配：粉色主题下的版本号胶囊色彩 */
+body.pink-theme .sidebar-top .app-info .app-version {
+  color: #ad4c7a !important;
+  background: rgba(255, 153, 204, 0.12) !important;
+  border-color: rgba(255, 153, 204, 0.28) !important;
+}
+
+/* 主题适配：蓝色主题下的版本号胶囊色彩 */
+body.blue-theme .sidebar-top .app-info .app-version {
+  color: #2e64a7 !important;
+  background: rgba(74, 144, 226, 0.12) !important;
+  border-color: rgba(74, 144, 226, 0.28) !important;
+}

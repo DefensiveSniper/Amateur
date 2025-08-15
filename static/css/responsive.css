@@ -1,0 +1,821 @@
+/* ========== 响应式设计 ========== */
+
+/* 大屏幕桌面设备 (1920px+) */
+@media (min-width: 1920px) {
+  .sidebar {
+    width: 320px;
+  }
+  .sidebar-top {
+    height: 120px;
+  }
+  .sidebar-top .logo img {
+    width: 70px;
+    height: 70px;
+  }
+  .sidebar-top .app-name {
+    font-size: 28px;
+  }
+  .main-content {
+    padding: 40px;
+  }
+  .main-header {
+    height: 280px;
+  }
+}
+
+/* 标准桌面设备 (1200px - 1919px) */
+@media (min-width: 1200px) and (max-width: 1919px) {
+  .sidebar {
+    width: 280px;
+  }
+  .main-content {
+    padding: 30px;
+  }
+}
+
+/* 小屏桌面/大平板 (992px - 1199px) */
+@media (min-width: 992px) and (max-width: 1199px) {
+  .sidebar {
+    width: 250px;
+  }
+  .sidebar-top {
+    height: 90px;
+  }
+  .sidebar-top .logo img {
+    width: 50px;
+    height: 50px;
+  }
+  .sidebar-top .app-name {
+    font-size: 20px;
+  }
+  .main-content {
+    padding: 25px;
+  }
+  .main-header {
+    flex: 0 0 12%; /* 大屏设备占据12%高度 */
+    min-height: 70px;
+    max-height: 120px;
+  }
+  .cards-wrapper {
+    gap: 15px;
+  }
+  .menu-label {
+    font-size: 14px;
+  }
+}
+
+/* 大屏设备但高度较低的情况 (如1200*700) */
+@media (min-width: 992px) and (max-height: 750px) {
+  .main-header {
+    flex: 0 0 8%; /* 降低header占比 */
+    min-height: 50px;
+    max-height: 80px;
+  }
+  .main-content {
+    padding: 20px; /* 减少padding */
+  }
+  .cards-wrapper {
+    gap: 12px; /* 减少卡片间距 */
+  }
+  .card {
+    min-height: 180px; /* 降低卡片最小高度 */
+  }
+  /* 确保功能页面的表单卡片在低高度大屏上正确显示 */
+  .card:nth-child(2) {
+    min-height: 200px;
+  }
+}
+
+/* 平板设备 (768px - 991px) */
+@media (min-width: 768px) and (max-width: 991px) {
+  .container {
+    flex-direction: column;
+  }
+  
+  .sidebar {
+    width: 100%;
+    height: auto;
+    flex-direction: row;
+    padding: 15px;
+    border-radius: 0;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  }
+  
+  .sidebar-top {
+    height: 60px;
+    margin-bottom: 0;
+    margin-right: 20px;
+    flex-shrink: 0;
+  }
+  
+  .sidebar-top .logo img {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .sidebar-top .app-name {
+    font-size: 18px;
+    margin-left: 10px;
+  }
+  
+  .sidebar-content {
+    flex-direction: row;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  
+  .sidebar-content .menu-item {
+    height: 45px;
+    min-width: 120px;
+    flex: 1;
+    justify-content: center;
+  }
+  
+  .menu-label {
+    font-size: 13px;
+  }
+  
+  .main-box {
+    margin: 0 15px 15px 15px;
+    border-radius: 15px 15px 0 0;
+  }
+  
+  .main-content {
+    padding: 20px;
+  }
+  
+  .main-header {
+    flex: 0 0 10%; /* 平板设备占据10%高度 */
+    min-height: 60px;
+    max-height: 100px;
+  }
+  
+  .cards-wrapper {
+    flex-direction: column;
+    gap: 15px;
+    height: auto;
+    min-height: 400px;
+  }
+  
+  .card {
+    min-height: 180px;
+    flex: none;
+  }
+  
+  /* 确保功能页面的表单卡片在平板上正确显示 */
+  .card:nth-child(2) {
+    min-height: 200px;
+    flex: 1;
+  }
+  
+  .chat-container {
+    padding: 15px;
+  }
+  
+  .button-container {
+    position: relative;
+    top: 0;
+    right: 0;
+    flex-direction: row;
+    justify-content: flex-end;
+    margin-bottom: 15px;
+  }
+  
+  .button-item {
+    width: auto;
+    min-width: 80px;
+  }
+}
+
+/* 大手机设备 (576px - 767px) */
+@media (min-width: 576px) and (max-width: 767px) {
+  .container {
+    flex-direction: column;
+  }
+  
+  .sidebar {
+    width: 100%;
+    height: auto;
+    flex-direction: column;
+    padding: 12px;
+    border-radius: 0;
+  }
+  
+  .sidebar-top {
+    height: 70px;
+    margin-bottom: 15px;
+  }
+  
+  .sidebar-top .logo img {
+    width: 45px;
+    height: 45px;
+  }
+  
+  .sidebar-top .app-name {
+    font-size: 20px;
+  }
+  
+  .sidebar-content {
+    flex-direction: row;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  
+  .sidebar-content .menu-item {
+    height: 40px;
+    flex: 1;
+    min-width: 100px;
+    justify-content: center;
+    padding: 0 8px;
+  }
+  
+  .menu-icon {
+    width: 24px;
+    height: 24px;
+    margin-right: 6px;
+  }
+  
+  .menu-icon img {
+    width: 16px;
+    height: 16px;
+  }
+  
+  .menu-label {
+    font-size: 12px;
+  }
+  
+  .main-box {
+    margin: 0 10px 10px 10px;
+    border-radius: 12px 12px 0 0;
+  }
+  
+  .main-content {
+    padding: 15px;
+  }
+  
+  .main-header {
+    flex: 0 0 8%; /* 大手机设备占据8%高度 */
+    min-height: 50px;
+    max-height: 80px;
+    margin-bottom: 15px;
+  }
+  
+  .cards-wrapper {
+    flex-direction: column;
+    gap: 12px;
+    height: auto;
+    min-height: 350px;
+  }
+  
+  .card {
+    min-height: 150px;
+    flex: none;
+  }
+  
+  /* 确保功能页面的表单卡片在大手机上正确显示 */
+  .card:nth-child(2) {
+    min-height: 180px;
+    flex: 1;
+  }
+  
+  .chat-container {
+    padding: 12px;
+  }
+  
+  .chat-box {
+    padding: 15px;
+    max-height: 400px;
+  }
+  
+  .message-container {
+    max-width: 90%;
+  }
+  
+  .user-message, .ai-message {
+    padding: 10px 14px;
+    font-size: 14px;
+  }
+  
+  .chat-input {
+    padding: 12px;
+    gap: 8px;
+  }
+  
+  .chat-input input {
+    padding: 10px 12px;
+    font-size: 14px;
+  }
+  
+  .chat-input button {
+    padding: 10px 16px;
+    font-size: 14px;
+  }
+  
+  .button-container {
+    position: relative;
+    top: 0;
+    right: 0;
+    flex-direction: row;
+    justify-content: space-between;
+    margin-bottom: 12px;
+    gap: 8px;
+  }
+  
+  .button-item {
+    width: auto;
+    min-width: 70px;
+    padding: 8px 10px;
+    font-size: 11px;
+  }
+  
+  .input-field {
+    padding: 10px 12px;
+    font-size: 14px;
+  }
+  
+  .main-btn {
+    padding: 12px 0;
+    font-size: 14px;
+  }
+}
+
+/* 小手机设备 (最大575px) */
+@media (max-width: 575px) {
+  body, html {
+    overflow-x: hidden;
+  }
+  
+  .container {
+    flex-direction: column;
+    height: 100vh;
+  }
+  
+  .sidebar {
+    width: 100%;
+    height: auto;
+    flex-direction: column;
+    padding: 10px;
+    border-radius: 0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+  
+  .sidebar-top {
+    height: 60px;
+    margin-bottom: 10px;
+    padding: 10px;
+  }
+  
+  .sidebar-top .logo img {
+    width: 35px;
+    height: 35px;
+  }
+  
+  .sidebar-top .app-name {
+    font-size: 18px;
+    margin-left: 8px;
+  }
+  
+  .sidebar-content {
+    flex-direction: row;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  
+  .sidebar-content .menu-item {
+    height: 35px;
+    flex: 1;
+    min-width: 70px;
+    justify-content: center;
+    padding: 0 6px;
+  }
+  
+  .menu-icon {
+    width: 20px;
+    height: 20px;
+    margin-right: 4px;
+  }
+  
+  .menu-icon img {
+    width: 14px;
+    height: 14px;
+  }
+  
+  .menu-label {
+    font-size: 10px;
+  }
+  
+  .main-box {
+    margin: 0 8px 8px 8px;
+    border-radius: 10px 10px 0 0;
+    flex: 1;
+  }
+  
+  .main-content {
+    padding: 12px;
+  }
+  
+  .main-header {
+    flex: 0 0 6%; /* 小手机设备占据6%高度 */
+    min-height: 40px;
+    max-height: 70px;
+    margin-bottom: 12px;
+    font-size: 1.1rem;
+  }
+  
+  .cards-wrapper {
+    flex-direction: column;
+    gap: 10px;
+    height: auto;
+    min-height: 300px;
+  }
+  
+  .card {
+    min-height: 120px;
+    flex: none;
+  }
+  
+  /* 确保功能页面的表单卡片在小手机上正确显示 */
+  .card:nth-child(2) {
+    min-height: 150px;
+    flex: 1;
+  }
+  
+  .main-tail {
+    height: 60px;
+  }
+  
+  .main-tail a {
+    font-size: 14px;
+    padding: 8px 16px;
+  }
+  
+  .chat-container {
+    padding: 10px;
+    border-radius: 15px;
+  }
+  
+  .chat-box {
+    padding: 12px;
+    max-height: 300px;
+  }
+  
+  .message-container {
+    max-width: 95%;
+    margin-bottom: 12px;
+  }
+  
+  .user-message, .ai-message {
+    padding: 8px 12px;
+    font-size: 13px;
+    border-radius: 12px;
+  }
+  
+  .user-message {
+    border-radius: 12px 12px 2px 12px;
+  }
+  
+  .ai-message {
+    border-radius: 12px 12px 12px 2px;
+  }
+  
+  .chat-input {
+    padding: 10px;
+    gap: 6px;
+    flex-direction: column;
+  }
+  
+  .chat-input input {
+    padding: 8px 10px;
+    font-size: 13px;
+    margin-bottom: 6px;
+  }
+  
+  .chat-input button {
+    padding: 8px 12px;
+    font-size: 13px;
+    width: 100%;
+  }
+  
+  .button-container {
+    position: relative;
+    top: 0;
+    right: 0;
+    flex-direction: row;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    gap: 6px;
+  }
+  
+  .button-item {
+    width: auto;
+    min-width: 60px;
+    padding: 6px 8px;
+    font-size: 10px;
+  }
+  
+  .input-field {
+    padding: 8px 10px;
+    font-size: 13px;
+  }
+  
+  .main-btn {
+    padding: 10px 0;
+    font-size: 13px;
+  }
+  
+  /* 模态框在小屏幕上的优化 */
+  .modal {
+    width: 90%;
+    max-width: 300px;
+    padding: 15px;
+  }
+  
+  .modal h3, .modal h2 {
+    font-size: 18px;
+    margin-bottom: 15px;
+  }
+  
+  .modal input,
+  .modal select,
+  .modal textarea {
+    padding: 8px 10px;
+    font-size: 13px;
+  }
+  
+  .modal button,
+  .modal .main-btn {
+    padding: 8px 16px;
+    font-size: 13px;
+    margin: 6px 4px;
+  }
+}
+
+/* 横屏手机优化 */
+@media (max-height: 500px) and (orientation: landscape) {
+  .sidebar {
+    height: auto;
+  }
+  
+  .sidebar-top {
+    height: 50px;
+  }
+  
+  .sidebar-content .menu-item {
+    height: 30px;
+  }
+  
+  .main-header {
+    flex: 0 0 8%; /* 横屏手机占据8%高度 */
+    min-height: 50px;
+    max-height: 90px;
+  }
+  
+  .chat-box {
+    max-height: 200px;
+  }
+  
+  .cards-wrapper {
+    flex-direction: row;
+  }
+}
+
+/* 设置弹窗样式 */
+.settings-popup {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.settings-popup.show {
+  opacity: 1;
+}
+
+.settings-popup-content {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  min-width: 400px;
+  max-width: 90vw;
+  max-height: 80vh;
+  overflow: hidden;
+  transform: scale(0.9) translateY(20px);
+  transition: transform 0.3s ease;
+}
+
+.settings-popup.show .settings-popup-content {
+  transform: scale(1) translateY(0);
+}
+
+.settings-popup-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 1px solid #eee;
+  background: linear-gradient(135deg, #ffb3d9 0%, #ff99cc 100%);
+  color: white;
+}
+
+.settings-popup-header h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.settings-popup-close {
+  font-size: 24px;
+  cursor: pointer;
+  color: white;
+  opacity: 0.8;
+  transition: opacity 0.3s ease;
+  line-height: 1;
+  padding: 4px;
+}
+
+.settings-popup-close:hover {
+  opacity: 1;
+}
+
+.settings-popup-body {
+  padding: 24px;
+  min-height: 200px;
+}
+
+.settings-popup-body p {
+  margin: 0;
+  color: #666;
+  font-size: 16px;
+  text-align: center;
+}
+
+.menu-settings-button:hover {
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 0 8px 25px rgba(255, 153, 204, 0.4);
+}
+
+.menu-settings-button:active {
+  transform: translateY(0) scale(0.95);
+}
+
+.menu-settings-icon {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.menu-settings-icon img {
+  width: 20px;
+  height: 20px;
+  filter: brightness(0) invert(1);
+  transition: transform 0.3s ease;
+}
+
+.menu-settings-button:hover .menu-settings-icon img {
+  transform: rotate(90deg);
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .settings-popup-content {
+    min-width: 320px;
+    margin: 20px;
+  }
+  
+  .settings-popup-header {
+    padding: 16px 20px;
+  }
+  
+  .settings-popup-header h2 {
+    font-size: 18px;
+  }
+  
+  .settings-popup-body {
+    padding: 20px;
+  }
+  
+  .theme-toggle-button {
+    width: 22px;
+    height: 22px;
+    bottom: 15px;
+    left: 15px;
+  }
+  
+  .theme-icon {
+    width: 11px;
+    height: 11px;
+  }
+
+  .theme-icon img {
+    width: 9px;
+    height: 9px;
+  }
+  
+  .menu-settings-button {
+    width: 22px;
+    height: 22px;
+    bottom: 15px;
+    left: 15px;
+  }
+  
+  .menu-settings-icon {
+    width: 11px;
+    height: 11px;
+  }
+  
+  .menu-settings-icon img {
+    width: 9px;
+    height: 9px;
+  }
+}
+
+/* 超小屏幕优化 */
+@media (max-width: 320px) {
+  .sidebar-top .app-name {
+    font-size: 16px;
+  }
+  
+  .menu-label {
+    display: none;
+  }
+  
+  .sidebar-content .menu-item {
+    min-width: 40px;
+    justify-content: center;
+  }
+  
+  .menu-icon {
+    margin-right: 0;
+  }
+  
+  .main-content {
+    padding: 8px;
+  }
+  
+  .main-header {
+    flex: 0 0 8%; /* 超小屏幕占据8%高度 */
+    min-height: 50px;
+    max-height: 90px;
+    font-size: 1rem;
+  }
+  
+  .theme-toggle-button {
+    width: 20px;
+    height: 20px;
+    bottom: 10px;
+    left: 10px;
+  }
+  
+  .theme-icon {
+    width: 10px;
+    height: 10px;
+  }
+
+  .theme-icon img {
+    width: 8px;
+    height: 8px;
+  }
+  
+  .menu-settings-button {
+    width: 20px;
+    height: 20px;
+    bottom: 10px;
+    left: 10px;
+  }
+  
+  .menu-settings-icon {
+    width: 10px;
+    height: 10px;
+  }
+  
+  .menu-settings-icon img {
+    width: 8px;
+    height: 8px;
+  }
+}
+
+/* 响应式优化 */
+@media (max-width: 768px) {
+  .config-section {
+    padding: 15px;
+    margin-bottom: 20px;
+  }
+  
+  .config-actions {
+    flex-direction: column;
+  }
+  
+  .config-save-btn, .config-reload-btn {
+    width: 100%;
+  }
+}

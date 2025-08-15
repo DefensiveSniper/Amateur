@@ -1,0 +1,86 @@
+/* ========== 主页 ========== */
+
+/* 让 iframe 全屏铺满内容区域 */
+.iframe-content {
+  width: 100%;
+  height: 100%;
+  border: none;
+  border-radius: 16px;
+  margin-bottom: 20px;
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+.iframe-content:hover {
+  transform: scale(1.01);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+}
+/* 隐藏 iframe 内部页面的滚动条 */
+.iframe-content::-webkit-scrollbar {
+  display: none;
+}
+.iframe-content {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* 下方尾栏 */
+.main-tail {
+  height: 80px;
+  background: linear-gradient(135deg, rgba(255, 179, 217, 0.1), rgba(255, 153, 204, 0.1));
+  backdrop-filter: blur(10px);
+  margin-bottom: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 16px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+.main-tail:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+/* 美化 a 标签 */
+.main-tail a {
+  text-decoration: none;
+  font-size: 18px;
+  font-weight: 700;
+  color: #ff99cc;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(255, 240, 248, 0.8));
+  padding: 12px 24px;
+  border-radius: 12px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid rgba(255, 153, 204, 0.2);
+  box-shadow: 0 4px 16px rgba(255, 153, 204, 0.1);
+  backdrop-filter: blur(10px);
+  position: relative;
+  overflow: hidden;
+}
+.main-tail a::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 153, 204, 0.2), transparent);
+  transition: left 0.5s;
+}
+.main-tail a:hover::before {
+  left: 100%;
+}
+/* 悬停时样式 */
+.main-tail a:hover {
+  color: #ff80b3;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(255, 237, 247, 0.9));
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 0 8px 24px rgba(255, 153, 204, 0.2);
+}
+/* 确保 p 文字不会有额外的 margin */
+.main-tail a p {
+  margin: 0;
+  position: relative;
+  z-index: 1;
+}

@@ -1,0 +1,31 @@
+<!-- 工具页面 -->
+<div id="douyinModal" class="douyin-modal" style="display: none;">
+  <div class="douyin-modal-content">
+    <div class="douyin-modal-header">
+      <h2>抖音视频下载</h2>
+      <button id="openDownloadPathBtn" class="open-path-btn" title="打开下载路径">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 7v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-6l-2-2H5a2 2 0 0 0-2 2z"></path>
+        </svg>
+        打开路径
+      </button>
+      <span class="douyin-modal-close" data-action="close-douyin">&times;</span>
+    </div>
+    <!-- Tab 按钮占位 -->
+    <div class="douyin-tab-buttons" id="douyinTabButtons"></div>
+    <!-- 表单容器占位（由 JS 注入） -->
+    <div id="douyinFormsContainer"></div>
+  </div>
+</div>
+
+<div class="main-header fade-in">
+  <h2>一些可能有用的玩意</h2>
+</div>
+<div class="cards-wrapper" id="cards-wrapper">
+  <div class="card"><img src="/static/images/ela.png" alt="图片1"></div>
+  <div class="card douyin-card" data-action="open-douyin-modal" style="cursor: pointer;">
+    <img src="/static/images/tiktok_card.png" alt="抖音视频下载" style="width: 100%; height: 100%; object-fit: cover; border-radius: 16px;">
+    <div style="position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(255,255,255,0.9); padding: 8px 16px; border-radius: 8px; font-weight: 600; color: #2c3e50;">抖音视频下载</div>
+  </div>
+  <div class="card"><img src="/static/images/ela.png" alt="图片3"></div>
+</div>

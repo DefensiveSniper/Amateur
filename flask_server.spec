@@ -1,49 +1,68 @@
 # -*- mode: python ; coding: utf-8 -*-
+
+import os
 from PyInstaller.utils.hooks import collect_dynamic_libs
-from PyInstaller.utils.hooks import collect_all
 
-datas = [('templates', 'templates'), ('static', 'static'), ('func', 'func'), ('base', 'base'), ('libs', 'libs'), ('cache', 'cache'), ('tools', 'tools')]
-binaries = []
-hiddenimports = []
-binaries += collect_dynamic_libs('azure.cognitiveservices.speech')
-tmp_ret = collect_all('dns')
-datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
-tmp_ret = collect_all('eventlet')
-datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
+block_cipher = None
 
+project_dir = os.path.abspath(os.getcwd())
+
+datas = []
+def add_dir(rel):
+    src = os.path.join(project_dir, rel)
+    if os.path.exists(src):
+        datas.append((src, rel))
+
+for rel in ["templates", "static", "func", "base", "libs", "cache", "tools", "requirements.txt", "config.json"]:
+    add_dir(rel)
+
+# 有些库（比如 Azure 语音）需要打包动态库
+binaries = collect_dynamic_libs("azure.cognitiveservices.speech")
 
 a = Analysis(
     ['flask_server.py'],
-    pathex=[],
+    pathex=[project_dir],
     binaries=binaries,
     datas=datas,
-    hiddenimports=hiddenimports,
+    hiddenimports=[
+        'engineio.async_drivers.threading',
+        'socketio.async_drivers.threading',
+    ],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
     excludes=[],
     noarchive=False,
-    optimize=0,
 )
-pyz = PYZ(a.pure)
 
+pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
+
+# 注意：这里做一个“带窗口”的 EXE（不显示控制台）
 exe = EXE(
     pyz,
     a.scripts,
     a.binaries,
+    a.zipfiles,
     a.datas,
     [],
-    name='flask_server',
+    name='flask_server-x86_64-pc-windows-msvc',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
     upx=True,
-    upx_exclude=[],
-    runtime_tmpdir=None,
-    console=False,
+    console=False,           # ✅ 不要控制台
     disable_windowed_traceback=False,
-    argv_emulation=False,
     target_arch=None,
-    codesign_identity=None,
-    entitlements_file=None,
+)
+
+# 关键：使用 COLLECT → onedir 布局（不是 onefile）
+coll = COLLECT(
+    exe,
+    a.binaries,
+    a.zipfiles,
+    a.datas,
+    strip=False,
+    upx=True,
+    upx_exclude=[],
+    name='flask_server',     # dist/flask_server/ 目录
 )

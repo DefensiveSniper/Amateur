@@ -3,7 +3,7 @@ import re
 import os
 import random
 import string
-from func.get_a_bogus import *
+from func.get_a_bogus import get_a_bogus,get_web_id
 import urllib.parse
 import asyncio
 from func.get_aweme_id import *
@@ -11,7 +11,7 @@ from func.logger import logger
 from uuid import uuid4
 from flask_socketio import SocketIO, emit, join_room
 
-async def download_single(share_link: str, cookies: str, msToken: str, log=lambda x: None, task_id=None):
+def download_single(share_link: str, cookies: str, msToken: str, log=lambda x: None, task_id=None):
     log(f"开始下载： {share_link}", task_id)
     logger.info(f"开始下载： {share_link}")
     
@@ -59,7 +59,8 @@ async def download_single(share_link: str, cookies: str, msToken: str, log=lambd
     
     params = commom_params
     params_string = urllib.parse.urlencode(params)
-    params['a_bogus'] = await get_a_bogus(url, params_string, headers['user-agent'])
+    params['a_bogus'] = asyncio.run(get_a_bogus(url, params_string, headers['user-agent']))
+    logger.info(f"params['a_bogus']: {params['a_bogus']}")
 
     try:
         response = requests.get('https://www.douyin.com/aweme/v1/web/aweme/detail/', params=params, headers=headers)
@@ -120,4 +121,3 @@ async def download_single(share_link: str, cookies: str, msToken: str, log=lambd
         except Exception as e:
             log(f"下载出错: {e}", task_id)
             return False
-        

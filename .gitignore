@@ -8,4 +8,5 @@ flask_server.spec
 chathistory/
 package-lock.json
 media/
-.vercel/
+src-tauri/
+package.json

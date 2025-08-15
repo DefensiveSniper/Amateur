@@ -29,29 +29,17 @@ function createWindow() {
 }
 
 //  打包时使用
-app.whenReady().then(() => {
-    Menu.setApplicationMenu(null); 
-    
-    let flaskPath;
-    if (process.env.NODE_ENV === "development") {
-        flaskPath = path.join(__dirname, 'flask_server.exe'); 
-    } else {
-        flaskPath = path.join(process.resourcesPath, '..', 'flask_server.exe'); 
-    }
-
-    flaskProcess = spawn(flaskPath, { stdio: 'ignore' });
-
-    createWindow();
-
-    app.on('activate', function () {
-      if (BrowserWindow.getAllWindows().length === 0) createWindow();
-    });
-});
-
-//  本地调试时使用,flask_server.py
 // app.whenReady().then(() => {
 //     Menu.setApplicationMenu(null); 
-//     flaskProcess = spawn('python', [path.join(__dirname, 'flask_server.py')]);
+    
+//     let flaskPath;
+//     if (process.env.NODE_ENV === "development") {
+//         flaskPath = path.join(__dirname, 'flask_server.exe'); 
+//     } else {
+//         flaskPath = path.join(process.resourcesPath, '..', 'flask_server.exe'); 
+//     }
+
+//     flaskProcess = spawn(flaskPath, { stdio: 'ignore' });
 
 //     createWindow();
 
@@ -59,6 +47,18 @@ app.whenReady().then(() => {
 //       if (BrowserWindow.getAllWindows().length === 0) createWindow();
 //     });
 // });
+
+//  本地调试时使用,flask_server.py
+app.whenReady().then(() => {
+    Menu.setApplicationMenu(null); 
+    flaskProcess = spawn('python', [path.join(__dirname, 'flask_server.py')]);
+
+    createWindow();
+
+    app.on('activate', function () {
+      if (BrowserWindow.getAllWindows().length === 0) createWindow();
+    });
+});
 
 // 确保 Flask 在 Electron 退出时被关闭
 app.on('window-all-closed', function () {

@@ -1,6 +1,6 @@
-import eventlet
-eventlet.monkey_patch()
-from engineio.async_drivers import eventlet
+# import eventlet
+# eventlet.monkey_patch()
+# from engineio.async_drivers import eventlet
 import os
 import json
 import signal
@@ -8,7 +8,7 @@ import time
 import psutil
 import requests
 from typing import Dict
-from flask import Flask, request, jsonify, render_template, Response
+from flask import Flask, request, jsonify, render_template, Response, send_from_directory
 from flask_cors import CORS
 from openai import OpenAI
 from datetime import datetime
@@ -16,7 +16,6 @@ import uuid
 from uuid import uuid4
 from threading import Thread
 from func.name_title import *
-import logging
 import urllib.parse
 from func.download_aweme_list import *
 from func.download_single import download_single
@@ -25,7 +24,7 @@ from playwright.async_api import async_playwright
 from func.login_douyin import DouYinLogin
 from func.get_a_bogus import *
 from func.logger import logger
-from func.get_aweme_id import get_aweme_id
+import asyncio
 
 # 全局变量
 pending_threads = []
@@ -38,12 +37,22 @@ PENDING_TASKS_PATH = "pending_summary_tasks.json"   # 新增：摘要待办队�
 # 初始化 Flask 应用
 app = Flask(__name__)
 CORS(app)  # 允许跨域请求
-socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet') # 初始化 SocketIO
+# socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet') # 初始化 SocketIO
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode="threading")
 
 # 设置模板目录
 @app.route("/")
 def index():
     return render_template("index.html")
+
+# 新增：为前端按路径加载模板片段提供服务
+@app.route('/templates/pages/<path:filename>')
+def serve_template_partial(filename):
+    # 仅允许访问 templates/pages 下的 .html 文件
+    if not filename.endswith('.html'):
+        return jsonify({"error": "Only .html allowed"}), 404
+    pages_dir = os.path.join(app.root_path, 'templates', 'pages')
+    return send_from_directory(pages_dir, filename)
 
 # 读取配置
 def load_config():
@@ -64,9 +73,12 @@ def load_config():
         },
         "tools": {
             "sec_user_id": "",
-            "cookie_str": "",
-            "user_agent": "",
-            "max_dloads": "10"
+            "cookies": "",
+            "msToken": "",
+            "max_dloads": "10",
+            "share_url": "",
+            "cookies_specific": "",
+            "msToken_specific": ""
         }
     }
     with open(CONFIG_PATH, "w", encoding="utf-8") as f:
@@ -118,10 +130,26 @@ def save_config():
         elif "cookies_following" in data:
             config["tools"]["cookies"] = data["cookies_following"]
             config["tools"]["msToken"] = data["msToken_following"]
+        # Douyin 工具（主页表单）
+        homepage_keys = {"sec_user_id", "cookies", "msToken", "max_dloads"}
+        specific_keys = {"share_url", "cookies_specific", "msToken_specific"}
+        if any(k in data for k in homepage_keys):
+            tools = config.get("tools", {})
+            for k in homepage_keys:
+                if k in data:
+                    tools[k] = data[k]
+            config["tools"] = tools
+        # Douyin 工具（指定视频表单）
+        elif any(k in data for k in specific_keys):
+            tools = config.get("tools", {})
+            for k in specific_keys:
+                if k in data:
+                    tools[k] = data[k]
+            config["tools"] = tools
         elif "provider" in data:   # chat配置
-            config["chat"] = data
+             config["chat"] = data
         else:
-            return jsonify({"error": "未知配置类型（Unknown config type）"}), 400
+             return jsonify({"error": "未知配置类型（Unknown config type）"}), 400
 
         with open(CONFIG_PATH, "w", encoding="utf-8") as f:
             json.dump(config, f, indent=4, ensure_ascii=False)
@@ -365,7 +393,7 @@ async def douyin_login():
     
 # 用于发日志/进度到前端下载窗口
 def log_func(msg, task_id):
-    socketio.emit("dlog", {"text": msg}, room=task_id)
+    socketio.emit("dlog", {"text": msg, "task_id": task_id}, room=task_id)
     
 # 抖音用户主页视频下载
 @app.route("/douyin_user_download", methods=["POST"])
@@ -469,7 +497,7 @@ def douyin_user_download():
                 )
                 already_download_nums += nums
                 percent = min(100, already_download_nums / max_download_num * 100)
-                socketio.emit("dprogress", {"percent": percent}, room=task_id)
+                socketio.emit("dprogress", {"percent": percent, "task_id": task_id}, room=task_id)
                 
                 if already_download_nums >= max_download_num:
                     log_func(f"已达到最大下载数量 {max_download_num}，停止下载。", task_id)
@@ -484,8 +512,8 @@ def douyin_user_download():
             log_func(f"用户 <{author}> 的作品下载完成，总计：{already_download_nums} 个", task_id)
             logger.info(f"用户 <{author}> 的作品下载完成，总计：{already_download_nums} 个")
             
-            socketio.emit("dprogress", {"percent": 100}, room=task_id)
-            socketio.emit("dfinish", {"msg": "全部下载完成"}, room=task_id)
+            socketio.emit("dprogress", {"percent": 100, "task_id": task_id}, room=task_id)
+            socketio.emit("dfinish", {"msg": "全部下载完成", "task_id": task_id}, room=task_id)
         
         Thread(target=background_download, daemon=True).start()
         return jsonify({"success": "下载任务已启动", "task_id": task_id}), 200
@@ -507,18 +535,24 @@ async def douyin_specific_download():
         log_func("开始下载抖音指定视频", task_id)
         socketio.emit("dprogress", {"percent": 0}, room=task_id)
         
-        is_success = await download_single(share_url, cookie_str, msToken, log=log_func, task_id=task_id)
-        if is_success:
-            socketio.emit("dprogress", {"percent": 100}, room=task_id)
-            socketio.emit("dfinish", {"msg": "指定视频下载完成"}, room=task_id)
-            logger.info("指定视频下载完成")
-            return jsonify({"success": "指定视频下载完成", "task_id": task_id}), 200
-        else:
-            log_func("指定视频下载失败", task_id)
-            logger.error("指定视频下载失败")
-            return jsonify({"error": "指定视频下载失败", "details": "下载任务启动失败"}), 500
+        def background_download():
+            is_success = download_single(share_url, cookie_str, msToken, log=log_func, task_id=task_id)
+            if is_success:
+                log_func("指定视频下载完成", task_id)
+                socketio.emit("dprogress", {"percent": 100, "task_id": task_id}, room=task_id)
+                socketio.emit("dfinish", {"msg": "指定视频下载完成", "task_id": task_id}, room=task_id)
+                logger.info("指定视频下载完成")
+            else:
+                log_func("指定视频下载失败", task_id)
+                socketio.emit("dfinish", {"msg": "指定视频下载失败", "task_id": task_id}, room=task_id)
+                logger.error("指定视频下载失败")
+                # return jsonify({"error": "指定视频下载失败", "details": "下载任务启动失败"}), 500
+        Thread(target=background_download, daemon=True).start()
+        return jsonify({"success": "下载任务已启动", "task_id": task_id}), 200
+    
     except Exception as e:
         log_func(f"下载失败：cookies失效，请清空cookies后点击下载获取新cookies", task_id)
+        socketio.emit("dfinish", {"msg": "指定视频下载失败"}, room=task_id)
         logger.error(f"下载失败：cookies失效，请清空cookies后点击下载获取新cookies")
         return jsonify({"error": "下载失败", "details": "cookies失效，请清空cookies后点击下载获取新cookies"}), 500
 
@@ -585,17 +619,16 @@ if __name__ == '__main__':
     process_all_untitled_files(HISTORY_DIR, client, config)   # 自动补偿未命名聊天记录
     monitor_thread = Thread(target=monitor_parent, daemon=True)
     monitor_thread.start()
-    
-    # 安全日志对象（兼容 eventlet）
-    logger = logging.getLogger("eventlet")
-    logger.setLevel(logging.INFO)
-    logger.addHandler(logging.StreamHandler())
 
     # 使用底层的 eventlet 方式启动，显式传 log
-    import eventlet
-    import eventlet.wsgi
-    listener = eventlet.listen(('127.0.0.1', 6969))
-    eventlet.wsgi.server(listener, app, log=logger)
+    # import eventlet
+    # import eventlet.wsgi
+    # listener = eventlet.listen(('127.0.0.1', 6969))
+    # eventlet.wsgi.server(listener, app, log=logger)
+    
+    # 用 SocketIO 自带的运行器（基于 Werkzeug，足够你本地/Electron 场景）
+    socketio.run(app, host='127.0.0.1', port=6969, allow_unsafe_werkzeug=True)
     
     # socketio.run(app, port=6969, log_output=True)
     # 直接启动会导致打包报错
+    

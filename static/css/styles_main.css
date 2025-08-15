@@ -1,0 +1,524 @@
+/* ==================== 应用主体 ==================== */
+
+/* 全局重置与基础设置 */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body, html {
+  width: 100%;
+  height: 100%;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  background: linear-gradient(135deg, #ffb3d9 0%, #ff99cc 100%);
+  overflow: hidden;
+}
+
+/* ==================== 应用信息版本号样式 ==================== */
+/* 应用信息容器样式：确保 app-name 和 app-version 垂直排列 */
+.sidebar-top .app-info {
+  flex: 2;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  justify-content: center !important;
+  margin-left: 15px;
+}
+/* 应用名样式（保持原有样式） */
+.sidebar-top .app-info .app-name {
+  font-weight: 700;
+  font-size: 24px;
+  color: #2c3e50;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  margin: 0; /* 清除默认 margin */
+}
+/* 版本号样式：胶囊状小标签 */
+.sidebar-top .app-info .app-version {
+  margin-top: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #6b7280;
+  padding: 3px 8px;
+  border-radius: 9999px;
+  background: rgba(0,0,0,0.05);
+  border: 1px solid rgba(0,0,0,0.06);
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.04);
+}
+
+/* 外层容器：水平两栏 */
+.container {
+  display: flex;
+  width: 100%;
+  height: 100vh;
+  background: linear-gradient(135deg, #ffb3d9 0%, #ff99cc 100%);
+  backdrop-filter: blur(10px);
+  position: relative;
+}
+
+/* 左侧侧边栏 */
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  width: 280px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  padding: 20px;
+  border-radius: 0 20px 20px 0;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  border-right: 1px solid rgba(255, 255, 255, 0.2);
+  transition: all 0.3s ease;
+  position: relative;
+}
+/* 顶部小区域：左右分为两部分，1:2比例 */
+.sidebar-top {
+  height: 100px;
+  margin-bottom: 30px;
+  display: flex;
+  align-items: center;
+  padding: 15px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.1));
+  border-radius: 15px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+.sidebar-top .logo {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+/* 让图片填充整个 .logo 容器 */
+.sidebar-top .logo img {
+  width: 60px;
+  height: 60px;
+  object-fit: cover;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  transition: transform 0.3s ease;
+}
+.sidebar-top .logo img:hover {
+  transform: scale(1.05) rotate(5deg);
+}
+.sidebar-top .app-name {
+  flex: 2;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  font-weight: 700;
+  font-size: 24px;
+  color: #2c3e50;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  margin-left: 15px;
+}
+.sidebar-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: stretch;
+}
+
+/* 菜单项默认状态：背景透明 + 动画过渡 */
+.sidebar-content .menu-item {
+  height: 55px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  padding: 0 16px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  position: relative;
+  overflow: hidden;
+}
+.sidebar-content .menu-item::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  transition: left 0.5s;
+}
+.sidebar-content .menu-item:hover::before {
+  left: 100%;
+}
+.sidebar-content .menu-item:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+/* 点击后激活状态：白色背景 + 阴影 + 轻微上移 */
+.sidebar-content .menu-item.active {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.7));
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  transform: translateY(-3px) scale(1.03);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+}
+.sidebar-content .menu-icon {
+  margin-right: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+.menu-icon img{
+  width: 20px;
+  height: 20px;
+  object-fit: cover;
+  border-radius: 4px;
+  filter: brightness(1.1) contrast(1.1);
+  transition: all 0.3s ease;
+}
+.sidebar-content .menu-item:hover .menu-icon {
+  background: rgba(255, 255, 255, 0.3);
+  transform: scale(1.1);
+}
+.sidebar-content .menu-item.active .menu-icon {
+  background: rgba(255, 255, 255, 0.4);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+.menu-label{
+  align-items: center;
+  justify-content: flex-start;
+  font-size: 16px;
+  font-weight: 600;
+  color: #2c3e50;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+.sidebar-content .menu-item:hover .menu-label {
+  color: #1a252f;
+}
+.sidebar-content .menu-item.active .menu-label {
+  color: #2c3e50;
+  font-weight: 700;
+}
+
+/* 菜单按钮 */
+.menu-button-container {
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  width: fit-content;
+  height: fit-content;
+  z-index: 1000;
+}
+
+/* 主题切换按钮 */
+.theme-toggle-button {
+  position: relative;
+  width: 50px;
+  height: 50px;
+  background: linear-gradient(135deg, #ffb3d9 0%, #ff99cc 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(255, 179, 217, 0.3);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  backdrop-filter: blur(10px);
+}
+.theme-toggle-button:hover {
+  transform: scale(1.1) rotate(180deg);
+  box-shadow: 0 6px 20px rgba(255, 179, 217, 0.4);
+  background: linear-gradient(135deg, #ff99cc 0%, #ffb3d9 100%);
+}
+.theme-toggle-button:active {
+  transform: scale(0.95) rotate(180deg);
+}
+.theme-icon {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.theme-icon img {
+  width: 20px;
+  height: 20px;
+  filter: brightness(0) invert(1);
+  transition: all 0.3s ease;
+}
+.theme-toggle-button:hover .theme-icon img {
+  transform: rotate(-180deg);
+}
+
+/* 设置按钮 */
+.menu-settings-button {
+  position: relative;
+  width: 50px;
+  height: 50px;
+  background: linear-gradient(135deg, #ffb3d9 0%, #ff99cc 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(255, 153, 204, 0.3);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  backdrop-filter: blur(10px);
+}
+.menu-settings-button:hover {
+  transform: scale(1.1) rotate(90deg);
+  box-shadow: 0 3px 10px rgba(255, 153, 204, 0.4);
+  background: linear-gradient(135deg, #ff99cc 0%, #ffb3d9 100%);
+}
+.menu-settings-button:active {
+  transform: scale(0.95) rotate(90deg);
+}
+.menu-settings-icon {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.menu-settings-icon img {
+  width: 20px;
+  height: 20px;
+  filter: brightness(0) invert(1);
+  transition: all 0.3s ease;
+}
+.settings-button:hover .menu-settings-icon img {
+  transform: rotate(-90deg);
+}
+
+#custom-toast {
+  position: fixed;
+  top: 50%;                /* 垂直居中 */
+  left: 50%;               /* 水平居中 */
+  transform: translate(-50%, -50%);
+  background: linear-gradient(135deg, #ffb3d9, #ff99cc);
+  color: white;
+  padding: 16px 24px;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  z-index: 10000;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  max-width: 400px;
+  text-align: center;
+  word-wrap: break-word;
+}
+#custom-toast.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* 弹窗内输入框统一美化 */
+.modal input,
+.modal select,
+.modal textarea {
+  margin-top: 6px;
+  width: 100%;
+  padding: 12px 16px;
+  font-size: 16px;
+  border: 1.5px solid #ffb3d9;
+  border-radius: 10px;
+  background: #fff0f5;
+  transition: border-color 0.25s, box-shadow 0.23s;
+  box-sizing: border-box;
+  outline: none;
+  color: #333;
+  box-shadow: 0 1.5px 5px 0 rgba(255, 153, 204, 0.2) inset;
+}
+.modal input:focus,
+.modal select:focus,
+.modal textarea:focus {
+  border-color: #ff99cc;
+  background: #fff5f8;
+  box-shadow: 0 0 0 2.5px rgba(255, 153, 204, 0.3);
+}
+
+/* 弹窗内按钮主色调美化 */
+.modal button,
+.modal .main-btn {
+  padding: 11px 36px;
+  border-radius: 11px;
+  font-size: 16.5px;
+  font-weight: 600;
+  background: linear-gradient(90deg, #ffb3d9 0%, #ff99cc 100%);
+  color: #fff;
+  border: none;
+  box-shadow: 0 3px 14px 0 rgba(255, 153, 204, 0.2);
+  cursor: pointer;
+  transition: background 0.19s, box-shadow 0.22s, transform 0.12s;
+  margin-right: 8px;
+  margin-top: 13px;
+  min-width: 90px;
+}
+.modal button:hover,
+.modal .main-btn:hover {
+  background: linear-gradient(90deg, #ff99cc 0%, #ff80b3 100%);
+  box-shadow: 0 4px 18px 0 rgba(255, 153, 204, 0.3);
+  transform: translateY(-1.5px) scale(1.025);
+}
+
+/* 取消/关闭按钮 */
+.modal button.close,
+.modal .main-btn.close {
+  background: #f5f6fa;
+  color: #5e6a85;
+  box-shadow: none;
+  border: 1.2px solid #dae4ef;
+}
+.modal button.close:hover,
+.modal .main-btn.close:hover {
+  background: #ecf0f8;
+  color: #3b4763;
+  border-color: #b8d0f7;
+}
+
+/* 弹窗按钮组横向居中 */
+.modal .modal-btns,
+#historyModal .modal-btns {
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+  margin-top: 18px;
+}
+
+.modal h3, .modal h2 {
+  text-align: center;
+  font-size: 22px;
+  margin-bottom: 24px;
+  font-weight: 700;
+  color: #e91e63;
+  letter-spacing: .5px;
+}
+
+/* 设置弹窗配置样式 */
+.config-section {
+  margin-bottom: 25px;
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+.config-section h4 {
+  margin: 0 0 15px 0;
+  color: #2c3e50;
+  font-size: 16px;
+  font-weight: 600;
+  border-bottom: 2px solid rgba(255, 153, 204, 0.3);
+  padding-bottom: 8px;
+}
+.config-item {
+  margin-bottom: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.config-item label {
+  font-weight: 500;
+  color: #34495e;
+  font-size: 14px;
+}
+.config-input {
+  padding: 10px 12px;
+  border: 2px solid rgba(255, 153, 204, 0.2);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.9);
+  font-size: 14px;
+  transition: all 0.3s ease;
+  outline: none;
+}
+.config-input:focus {
+  border-color: #ff99cc;
+  box-shadow: 0 0 0 3px rgba(255, 153, 204, 0.1);
+  background: rgba(255, 255, 255, 1);
+}
+.config-input::placeholder {
+  color: #95a5a6;
+}
+.config-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+}
+.config-save-btn, .config-reload-btn {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  outline: none;
+}
+.config-save-btn {
+  background: linear-gradient(135deg, #ffb3d9 0%, #ff99cc 100%);
+  color: white;
+  box-shadow: 0 4px 15px rgba(255, 153, 204, 0.3);
+}
+.config-save-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(255, 153, 204, 0.4);
+}
+.config-reload-btn {
+  background: rgba(255, 255, 255, 0.9);
+  color: #ff99cc;
+  border: 2px solid #ff99cc;
+}
+.config-reload-btn:hover {
+  background: #ff99cc;
+  color: white;
+  transform: translateY(-2px);
+}
+
+/* 动画：淡入 */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+/* 动画：滑入 */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+/* 动画：缩放淡入 */
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9) translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}

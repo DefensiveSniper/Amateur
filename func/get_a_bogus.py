@@ -20,6 +20,13 @@ def resource_path(relative_path):
 douyin_js_path = resource_path("libs/douyin.js")
 douyin_sign_obj = execjs.compile(open(douyin_js_path, encoding='utf-8-sig').read())
 
+# 获取当前文件的目录，然后构建JS文件的绝对路径
+# current_dir = os.path.dirname(os.path.abspath(__file__))
+# parent_dir = os.path.dirname(current_dir)
+# douyin_js_path = os.path.join(parent_dir, 'libs', 'douyin.js')
+
+# douyin_sign_obj = execjs.compile(open(douyin_js_path, encoding='utf-8-sig').read())
+
 def get_web_id():
     """
     生成随机的webid
