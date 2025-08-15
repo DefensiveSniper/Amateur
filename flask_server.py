@@ -65,7 +65,6 @@ def load_config():
         "chat": {
             "provider": "openai",
             "model": "gpt-4o",
-            "systemPrompt": "",
             "apiKeys": {
                 "openai": "",
                 "deepseek": ""
@@ -165,77 +164,26 @@ def save_config():
 @app.route('/chat', methods=['POST'])
 def chat():
     try:
-        data = request.json or {}
-        # 支持两种入参：messages（数组）或 message（字符串）
-        incoming_messages = data.get("messages")
-        single_message = data.get("message", "")
+        data = request.json
+        user_message = data.get("message", "")
 
-        if not incoming_messages and not single_message:
+        if not user_message:
             return jsonify({"error": "消息不能为空"}), 400
 
-        # 组装消息（可附加系统提示词）
-        system_prompt = (config.get("chat", {}).get("systemPrompt") or "").strip()
-        messages = []
-        if system_prompt:
-            messages.append({"role": "system", "content": system_prompt})
-
-        if isinstance(incoming_messages, list) and incoming_messages:
-            # 保证角色字段合法
-            for m in incoming_messages:
-                role = m.get("role", "user")
-                if role not in ("system", "user", "assistant"):
-                    role = "user"
-                content = m.get("content", "")
-                if content:
-                    messages.append({"role": role, "content": content})
-        else:
-            messages.append({"role": "user", "content": single_message})
-
-        # 简单截断，避免上下文过长（按字符数粗略截断）
-        def trim_messages_by_char_limit(msgs, limit=12000):
-            total = 0
-            trimmed = []
-            # 从尾部往前保留，优先保留最新内容；保留首个system
-            system_msgs = [m for m in msgs if m.get('role') == 'system']
-            non_system = [m for m in msgs if m.get('role') != 'system']
-            for m in reversed(non_system):
-                c = m.get('content') or ''
-                length = len(c)
-                if total + length <= limit:
-                    trimmed.append(m)
-                    total += length
-                else:
-                    break
-            trimmed.reverse()
-            return (system_msgs[:1] + trimmed) if system_msgs else trimmed
-
-        messages = trim_messages_by_char_limit(messages)
-
         def generate():
-            try:
-                response = client.chat.completions.create(
-                    model=config["chat"]["model"],
-                    messages=messages,
-                    stream=True
-                )
-                for chunk in response:
-                    if chunk.choices:
-                        text = getattr(chunk.choices[0].delta, "content", "") or ""
-                        if text:
-                            yield f"data: {text}\n\n"
-            except Exception as gen_e:
-                # 将错误也以SSE形式返回，避免前端挂起
-                err_msg = str(gen_e).replace("\n", " ")
-                yield f"event: error\ndata: {err_msg}\n\n"
-
-        headers = {
-            'Cache-Control': 'no-cache',
-            'Content-Type': 'text/event-stream',
-            'X-Accel-Buffering': 'no'
-        }
-        return Response(generate(), headers=headers)
+            response = client.chat.completions.create(
+                model=config["chat"]["model"],
+                messages=[{"role": "user", "content": user_message}],
+                stream=True
+            )
+            for chunk in response:
+                if chunk.choices:
+                    text = getattr(chunk.choices[0].delta, "content", "") or ""
+                    if text:
+                        yield f"data: {text}\n\n"
+        return Response(generate(), mimetype='text/plain')
     except Exception as e:
-        logger.error(f"Error in /chat: {e}")
+        logger.info("Error in /chat:", str(e))
         return jsonify({"error": "服务器内部错误", "details": str(e)}), 500
 
 # 获取聊天记录
@@ -584,12 +532,17 @@ def open_download_path():
             subprocess.run(['explorer', download_path])
         elif system == "Darwin":  # macOS
             subprocess.run(['open', download_path])
-        else:  # Linux 或其他系统
+        elif system == "Linux":
             subprocess.run(['xdg-open', download_path])
+        else:
+            return jsonify({"success": False, "error": "不支持的操作系统"}), 400
+            
+        return jsonify({"success": True, "message": "已打开下载路径"}), 200
         
-        return jsonify({'success': True})
+    except subprocess.CalledProcessError as e:
+        return jsonify({"success": False, "error": f"打开文件夹失败: {str(e)}"}), 500
     except Exception as e:
-        return jsonify({'success': False, 'error': str(e)})
+        return jsonify({"success": False, "error": f"操作失败: {str(e)}"}), 500
 
 # 监听 SIGTERM 信号，优雅关闭 Flask 服务器
 def shutdown_server(signum, frame):
